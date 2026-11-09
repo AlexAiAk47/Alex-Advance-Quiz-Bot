@@ -76,6 +76,17 @@ REQUIRED_SUB_CHANNEL: str | None = _env("REQUIRED_SUB_CHANNEL")
 # ---------------------------------------------------------------------------
 # Feature flags
 # ---------------------------------------------------------------------------
+# Run the Creator Bot (Pyrogram / Kurigram). Enabled by default.
+RUN_CREATOR_BOT: bool = _env_bool("RUN_CREATOR_BOT", True)
+
+# Run the Runner Bot (python-telegram-bot). Enabled by default.
+RUN_RUNNER_BOT: bool = _env_bool("RUN_RUNNER_BOT", True)
+
+# Run the FastAPI Mini App server. Enabled by default.
+# Set RUN_MINI_APP=false on Heroku if you only want the bots.
+RUN_MINI_APP: bool = _env_bool("RUN_MINI_APP", True)
+
+# When true, quizzes can be played without any payment / subscription check.
 FREE_BOT: bool = _env_bool("FREE_BOT", False)
 
 # ---------------------------------------------------------------------------
