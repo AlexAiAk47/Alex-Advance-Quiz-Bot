@@ -2,6 +2,11 @@
 Advance Quiz Bot — Open Source Project
 Original: Gagan (github.com/devgaganin) | Ref: https://t.me/advance_quiz_bot
 Reviewed & verified with Claude AI assistance.
+
+⚠️ MODIFIED: AI Solution generation is DISABLED for PDF reports.
+PDF reports now contain ONLY: Question + Options + Correct Answer + manual Explanation + Reference.
+No AI calls are made when generating PDF reports.
+AI is still used ONLY by /aiset (AI quiz generation) and /pdfquiz (PDF→quiz).
 """
 
 from __future__ import annotations
@@ -18,14 +23,6 @@ logger = logging.getLogger(__name__)
 
 PdfStyle = Literal["classic", "modern"]
 
-POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "").strip()
-POLLINATIONS_BASE_URL = os.getenv("POLLINATIONS_BASE_URL", "https://gen.pollinations.ai/v1").strip()
-POLLINATIONS_MODEL = os.getenv("POLLINATIONS_MODEL", "openai").strip()
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
-GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
-
 CREATOR_LINE = "Created by: @Alex_Aditya(साधना).tg"
 
 _SECTION_COLORS = [
@@ -33,67 +30,10 @@ _SECTION_COLORS = [
     "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE", "#85C1E9",
 ]
 
-def _pollinations_generate(prompt: str, system_msg: str) -> str:
-    try:
-        import httpx
-    except ImportError:
-        return ""
 
-    url = f"{POLLINATIONS_BASE_URL.rstrip('/')}/chat/completions"
-    headers = {"Content-Type": "application/json"}
-    if POLLINATIONS_API_KEY:
-        headers["Authorization"] = f"Bearer {POLLINATIONS_API_KEY}"
-
-    body = {
-        "model": POLLINATIONS_MODEL,
-        "messages": [
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.4,
-        "max_tokens": 500,
-    }
-
-    try:
-        with httpx.Client(timeout=60.0) as client:
-            resp = client.post(url, json=body, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
-            return (data["choices"][0]["message"]["content"] or "").strip()
-    except Exception as e:
-        logger.error("❌ Pollinations FAILED [%s]: %s", type(e).__name__, str(e)[:200])
-        return ""
-
-def _groq_client():
-    try:
-        from groq import Groq
-    except ImportError:
-        return None
-    if not GROQ_API_KEY or not GROQ_API_KEY.startswith("gsk_"):
-        return None
-    try:
-        return Groq(api_key=GROQ_API_KEY, base_url=GROQ_BASE_URL)
-    except Exception:
-        return None
-
-def _groq_generate(prompt: str, system_msg: str) -> str:
-    client = _groq_client()
-    if client is None:
-        return ""
-    try:
-        resp = client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": system_msg},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.4,
-            max_tokens=500,
-        )
-        return (resp.choices[0].message.content or "").strip()
-    except Exception as e:
-        logger.error("❌ Groq FAILED [%s]: %s", type(e).__name__, str(e)[:200])
-        return ""
+# ══════════════════════════════════════════════════════════════════════
+# DEPRECATED — AI SOLUTION HELPERS (kept only for reuse by /aiset)
+# ══════════════════════════════════════════════════════════════════════
 
 def _strip_answer_letter_from_text(text: str, correct_letters: str) -> str:
     if not text:
@@ -111,6 +51,7 @@ def _strip_answer_letter_from_text(text: str, correct_letters: str) -> str:
         cleaned.append(ln)
     return "\n".join(cleaned).strip()
 
+
 def _build_prompt(question: str, options: list[str], correct_letters: str, language_hint: str) -> tuple[str, str]:
     opts_lines = "\n".join(f"   {chr(65 + i)}) {opt}" for i, opt in enumerate(options))
     correct_letter = correct_letters.split(",")[0].strip().upper()
@@ -119,31 +60,21 @@ def _build_prompt(question: str, options: list[str], correct_letters: str, langu
 
     if language_hint == "Hindi":
         prompt = (
-            f"तुम एक experienced Indian competitive exam teacher हो "
-            f"(Bihar Daroga, SSC, Railway, State PCS). "
+            f"तुम एक experienced Indian competitive exam teacher हो. "
             f"नीचे दिए question का solution लिखो.\n\n"
-            f"Question: {question}\n\n"
-            f"Options:\n{opts_lines}\n\n"
-            f"सही उत्तर: {correct_letter}) {correct_text}\n\n"
-            f"नियम:\n1. कोई heading या label मत लिखो\n2. कोई HTML tags मत लिखो\n"
-            f"3. सीधा natural paragraph form में लिखो\n"
-            f"4. शुरुआत: 'सही उत्तर है (X) विकल्प क्योंकि...' फिर 2 line में कारण\n"
-            f"5. फिर 1 line में बाकी विकल्प क्यों गलत हैं\n6. आखिर में 1 short exam tip\n"
-            f"7. कुल 5-7 lines, 80-120 शब्द\n\nSolution:"
+            f"Question: {question}\n\nOptions:\n{opts_lines}\n\n"
+            f"सही उत्तर: {correct_letter}) {correct_text}\n\nSolution:"
         )
-        system_msg = "You are a friendly Indian competitive-exam teacher. Write flowing paragraphs. NEVER use HTML tags or labels."
+        system_msg = "You are a friendly Indian competitive-exam teacher."
     else:
         prompt = (
             f"You are an experienced Indian competitive exam teacher. "
             f"Write the solution for this question.\n\nQuestion: {question}\n\n"
-            f"Options:\n{opts_lines}\n\nCorrect Answer: {correct_letter}) {correct_text}\n\n"
-            f"Rules:\n1. No heading or label\n2. No HTML tags\n3. Natural paragraph form\n"
-            f"4. Start: 'The correct answer is (X) because...'\n"
-            f"5. Then 2 lines about why others are wrong\n6. End with 1 exam tip\n"
-            f"7. Total 5-7 lines, 80-120 words\n\nSolution:"
+            f"Options:\n{opts_lines}\n\nCorrect Answer: {correct_letter}) {correct_text}\n\nSolution:"
         )
-        system_msg = "You are a friendly Indian competitive-exam teacher. NEVER use HTML tags or labels."
+        system_msg = "You are a friendly Indian competitive-exam teacher."
     return system_msg, prompt
+
 
 def _clean_ai_text(text: str, correct_letters: str) -> str:
     if not text:
@@ -154,34 +85,6 @@ def _clean_ai_text(text: str, correct_letters: str) -> str:
     text = _strip_answer_letter_from_text(text, correct_letters)
     return text.strip()
 
-def _ai_generate_solution(question: str, options: list[str], correct_letters: str, language_hint: str = "Hindi", max_attempts: int = 2) -> str:
-    system_msg, prompt = _build_prompt(question, options, correct_letters, language_hint)
-    q_preview = (question[:60] + "…") if len(question) > 60 else question
-
-    for attempt in range(1, max_attempts + 1):
-        logger.info("     ↪ Pollinations attempt %d/%d — %r", attempt, max_attempts, q_preview)
-        raw = _pollinations_generate(prompt, system_msg)
-        text = _clean_ai_text(raw, correct_letters)
-        if len(text) >= 40:
-            logger.info("     ✅ Pollinations OK (%d chars)", len(text))
-            return text
-        logger.warning("     ⚠️  Pollinations too short (%d chars)", len(text or ""))
-        if attempt < max_attempts:
-            time.sleep(1.5)
-
-    for attempt in range(1, max_attempts + 1):
-        logger.info("     ↪ Groq fallback attempt %d/%d", attempt, max_attempts)
-        raw = _groq_generate(prompt, system_msg)
-        text = _clean_ai_text(raw, correct_letters)
-        if len(text) >= 40:
-            logger.info("     ✅ Groq OK (%d chars)", len(text))
-            return text
-        logger.warning("     ⚠️  Groq too short (%d chars)", len(text or ""))
-        if attempt < max_attempts:
-            time.sleep(2.0)
-
-    logger.error("     ❌ AI FAILED for: %r", q_preview)
-    return ""
 
 def _format_ai_solution_html(ai_text: str) -> str:
     if not ai_text or not ai_text.strip():
@@ -192,6 +95,11 @@ def _format_ai_solution_html(ai_text: str) -> str:
     if not paragraphs:
         return ""
     return f'<div class="ai-paragraph">{" ".join(paragraphs)}</div>'
+
+
+# ══════════════════════════════════════════════════════════════════════
+# HTML / MATH HELPERS
+# ══════════════════════════════════════════════════════════════════════
 
 def _render_math_in_html(text: str) -> str:
     try:
@@ -216,11 +124,13 @@ def _render_math_in_html(text: str) -> str:
     text = re.sub(r"(?<!\$)\$(?!\$)([^$\n]+?)(?<!\$)\$(?!\$)", _inline, text)
     return text
 
+
 def _escape_html(text: str) -> str:
     return (
         text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         .replace('"', "&quot;").replace("'", "&#39;")
     )
+
 
 def _safe_html(text: str, render_math: bool = True) -> str:
     if render_math and ("$$" in text or "$" in text):
@@ -235,6 +145,7 @@ def _safe_html(text: str, render_math: bool = True) -> str:
         return "".join(escaped)
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
 
+
 def _build_section_map(sections: Optional[list[dict]]) -> dict[int, str]:
     section_map: dict[int, str] = {}
     if not sections:
@@ -248,10 +159,12 @@ def _build_section_map(sections: Optional[list[dict]]) -> dict[int, str]:
             section_map[int(qi)] = sec_name
     return section_map
 
+
 def _strip_leading_number(text: str) -> str:
     if not text:
         return text
     return re.sub(r"^\s*(?:Q(?:uestion)?\s*[\.\-:]?\s*|प्र(?:श्न)?\s*[\.\-:]?\s*)?\d+\s*[\.\)\-:]\s*", "", text, count=1, flags=re.IGNORECASE)
+
 
 def _detect_language(text: str) -> str:
     if not text:
@@ -262,15 +175,23 @@ def _detect_language(text: str) -> str:
         return "English"
     return "Hindi" if (devanagari / max(total_letters, 1)) > 0.3 else "English"
 
+
+# ══════════════════════════════════════════════════════════════════════
+# PRACTICE SHEET BUILDER — AI DISABLED
+# ══════════════════════════════════════════════════════════════════════
+
 def _build_practice_sheet_html(
     questions: list[dict],
     session_polls: dict,
     sections: Optional[list[dict]],
     shuffle_options: bool,
     style: PdfStyle,
-    use_ai: bool = True,
+    use_ai: bool = False,
     progress_callback=None,
 ) -> tuple[str, list[tuple[int, str]], list[dict], dict[int, str]]:
+    # HARD KILL SWITCH — AI solution always OFF in PDF reports
+    use_ai = False
+
     import random
     section_map = _build_section_map(sections)
     questions_html = ""
@@ -282,29 +203,7 @@ def _build_practice_sheet_html(
     last_section = None
     display_num = 0
 
-    # ---- Pre-count how many questions will actually go to the AI ----
-    total_ai = 0
-    if use_ai:
-        for _pid, pdata in polls_list:
-            qi = pdata.get("question_index", 0)
-            if not (0 <= qi < len(questions)):
-                continue
-            q = questions[qi]
-            opts = [str(o) for o in (q.get("options") or []) if str(o).strip()]
-            cid = q.get("correct_option_id", 0)
-            cid_list = cid if isinstance(cid, list) else [cid]
-            try:
-                cid_list = [int(c) for c in cid_list]
-            except Exception:
-                cid_list = []
-            if opts and any(0 <= c < len(opts) for c in cid_list):
-                total_ai += 1
-    logger.info("📊 PDF Report → %d questions total, %d will get AI solutions",
-                len(polls_list), total_ai)
-
-    ai_done = 0
-    ai_ok = 0
-    t0 = time.time()
+    logger.info("📊 PDF Report → %d questions, AI solutions DISABLED", len(polls_list))
 
     for i, (_poll_id, pdata) in enumerate(polls_list):
         q_idx = pdata.get("question_index", i)
@@ -355,55 +254,50 @@ def _build_practice_sheet_html(
         else:
             max_opt_len = 0
 
-        if max_opt_len <= 12: grid_cls = "opt-grid-4"
-        elif max_opt_len <= 35: grid_cls = "opt-grid-2"
-        else: grid_cls = "opt-grid-1"
+        if max_opt_len <= 12:
+            grid_cls = "opt-grid-4"
+        elif max_opt_len <= 35:
+            grid_cls = "opt-grid-2"
+        else:
+            grid_cls = "opt-grid-1"
 
-        opts_html = "".join(f'<div class="opt-item">({letters[j].lower()}) {_safe_html(str(opt))}</div>' for j, opt in enumerate(shuffled_options))
+        opts_html = "".join(
+            f'<div class="opt-item">({letters[j].lower()}) {_safe_html(str(opt))}</div>'
+            for j, opt in enumerate(shuffled_options)
+        )
 
         if has_answer:
             correct_letters = ",".join(letters[c].lower() for c in correct_ids_final if 0 <= c < len(letters))
-            if correct_letters: answer_key.append((display_num, correct_letters))
-            else: correct_letters = ""; has_answer = False
+            if correct_letters:
+                answer_key.append((display_num, correct_letters))
+            else:
+                correct_letters = ""
+                has_answer = False
         else:
             correct_letters = ""
 
-        options_for_solution = [{"letter": letters[j], "text": _safe_html(str(opt)), "is_correct": j in correct_ids_final} for j, opt in enumerate(shuffled_options)]
+        options_for_solution = [
+            {"letter": letters[j], "text": _safe_html(str(opt)), "is_correct": j in correct_ids_final}
+            for j, opt in enumerate(shuffled_options)
+        ]
 
         manual_expl = str(q.get("explanation", "")).strip()
         if manual_expl.lower() in ("none", "null", "n/a", "-", ""):
             manual_expl = ""
 
+        # NO AI CALL — ai_text always empty
         ai_text = ""
-        if use_ai and has_answer:
-            ai_done += 1
-            logger.info("🧠 [%d/%d] Solving Q%d (display #%d) — %r",
-                        ai_done, total_ai, q_idx, display_num,
-                        (raw_q_text[:70] + "…") if len(raw_q_text) > 70 else raw_q_text)
-            lang = _detect_language(raw_q_text)
-            ai_text = _ai_generate_solution(raw_q_text, [str(o) for o in shuffled_options], correct_letters or "A", lang)
-            if ai_text:
-                ai_solutions_raw[q_idx] = ai_text
-                ai_ok += 1
-                logger.info("    ✅ [%d/%d done · %d ok] Q%d saved (%d chars)",
-                            ai_done, total_ai, ai_ok, display_num, len(ai_text))
-            else:
-                logger.warning("    ❌ [%d/%d done · %d ok] Q%d — no AI solution",
-                               ai_done, total_ai, ai_ok, display_num)
-
-            # ---- Live progress callback (thread-safe, fires from executor thread) ----
-            if progress_callback is not None:
-                try:
-                    progress_callback(ai_done, total_ai, ai_ok, display_num, bool(ai_text))
-                except Exception as e:
-                    logger.warning("progress_callback failed: %s", e)
 
         solutions.append({
-            "num": display_num, "question": _safe_html(clean_q_text), "options": options_for_solution,
-            "correct_letters": correct_letters, "has_options": has_options, "has_answer": has_answer,
+            "num": display_num,
+            "question": _safe_html(clean_q_text),
+            "options": options_for_solution,
+            "correct_letters": correct_letters,
+            "has_options": has_options,
+            "has_answer": has_answer,
             "explanation": _safe_html(manual_expl) if manual_expl else "",
             "reference": _safe_html(str(q.get("reply_text", "")).strip()) if q.get("reply_text") else "",
-            "ai_solution": _format_ai_solution_html(ai_text),
+            "ai_solution": "",
         })
 
         safe_q = _safe_html(clean_q_text)
@@ -414,18 +308,25 @@ def _build_practice_sheet_html(
         else:
             questions_html += f'<div class="qs-item qs-item-note">{question_line}</div>'
 
-    elapsed = time.time() - t0
-    if use_ai:
-        logger.info("🏁 AI solutions finished: %d/%d ok in %.1fs (%.1fs avg/question)",
-                    ai_ok, total_ai, elapsed, (elapsed / max(ai_done, 1)))
-
     return questions_html, answer_key, solutions, ai_solutions_raw
+
+
+# ══════════════════════════════════════════════════════════════════════
+# ANSWER KEY + SOLUTIONS HTML
+# ══════════════════════════════════════════════════════════════════════
 
 def _build_answer_key_html(answer_key: list[tuple[int, str]]) -> str:
     if not answer_key:
         return ""
     cells = "".join(f'<span class="ak-cell"><b>{num}.</b> {ans}</span>' for num, ans in answer_key)
-    return f'<div class="answer-key-page"><div class="answer-key-title">\U0001F511 Answer Key</div><div class="answer-key-grid">{cells}</div><div class="answer-key-note">Ye answers aapke practice ke liye hain.</div></div>'
+    return (
+        f'<div class="answer-key-page">'
+        f'<div class="answer-key-title">\U0001F511 Answer Key</div>'
+        f'<div class="answer-key-grid">{cells}</div>'
+        f'<div class="answer-key-note">Ye answers aapke practice ke liye hain.</div>'
+        f'</div>'
+    )
+
 
 def _build_solutions_html(solutions: list[dict]) -> str:
     if not solutions:
@@ -437,22 +338,45 @@ def _build_solutions_html(solutions: list[dict]) -> str:
             opts_lines = []
             for opt in sol["options"]:
                 if opt["is_correct"]:
-                    opts_lines.append(f'<div class="sol-opt sol-opt-correct"><span class="sol-opt-letter">{opt["letter"]})</span> {opt["text"]} <span class="sol-correct-tag">\u2714 Correct</span></div>')
+                    opts_lines.append(
+                        f'<div class="sol-opt sol-opt-correct">'
+                        f'<span class="sol-opt-letter">{opt["letter"]})</span> {opt["text"]} '
+                        f'<span class="sol-correct-tag">\u2714 Correct</span></div>'
+                    )
                 else:
-                    opts_lines.append(f'<div class="sol-opt"><span class="sol-opt-letter">{opt["letter"]})</span> {opt["text"]}</div>')
+                    opts_lines.append(
+                        f'<div class="sol-opt"><span class="sol-opt-letter">{opt["letter"]})</span> {opt["text"]}</div>'
+                    )
             opts_block = "".join(opts_lines)
 
         answer_banner = ""
         if sol.get("has_answer") and sol.get("correct_letters"):
-            answer_banner = f'<div class="sol-answer"><b>\u2705 Correct Answer:</b> <span class="sol-answer-letter">{sol["correct_letters"].upper()}</span></div>'
+            answer_banner = (
+                f'<div class="sol-answer"><b>\u2705 Correct Answer:</b> '
+                f'<span class="sol-answer-letter">{sol["correct_letters"].upper()}</span></div>'
+            )
 
         expl_block = f'<div class="sol-explanation">{sol["explanation"]}</div>' if sol["explanation"] else ""
         ref_block = f'<div class="sol-reference"><b>\U0001F4DD Reference:</b> {sol["reference"]}</div>' if sol["reference"] else ""
-        ai_block = f'<div class="sol-ai-box"><div class="sol-ai-header">\U0001F4D8 Solution</div><div class="sol-ai-body">{sol["ai_solution"]}</div></div>' if sol.get("ai_solution") else ""
         opts_wrapper = f'<div class="sol-options">{opts_block}</div>' if opts_block else ""
 
-        blocks.append(f'<div class="sol-item"><div class="sol-question"><span class="sol-num">{sol["num"]}.</span> {sol["question"]}</div>{opts_wrapper}{answer_banner}{expl_block}{ref_block}{ai_block}</div>')
-    return f'<div class="solutions-page"><div class="solutions-title">\U0001F4D8 Detailed Solutions</div><div class="solutions-container">{"".join(blocks)}</div></div>'
+        blocks.append(
+            f'<div class="sol-item">'
+            f'<div class="sol-question"><span class="sol-num">{sol["num"]}.</span> {sol["question"]}</div>'
+            f'{opts_wrapper}{answer_banner}{expl_block}{ref_block}'
+            f'</div>'
+        )
+    return (
+        f'<div class="solutions-page">'
+        f'<div class="solutions-title">\U0001F4D8 Detailed Solutions</div>'
+        f'<div class="solutions-container">{"".join(blocks)}</div>'
+        f'</div>'
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════
+# CSS
+# ══════════════════════════════════════════════════════════════════════
 
 _CLASSIC_CSS = """
 @page { size: A4; margin: 1.2cm 1.2cm 1.5cm 1.2cm; @bottom-center { content: "Page " counter(page); font-family: 'Noto Sans', sans-serif; font-size: 8pt; color: #64748b; } }
@@ -493,10 +417,6 @@ body { font-family: 'Noto Sans', 'Noto Sans Devanagari', sans-serif; color: #1e2
 .sol-answer-letter { color: #16a34a; font-weight: 800; font-size: 10pt; }
 .sol-explanation { background: #fef9c3; border-left: 2px solid #d97706; padding: 5px 8px; font-size: 8.5pt; color: #78350f; border-radius: 0 3px 3px 0; margin-bottom: 4px; line-height: 1.4; }
 .sol-reference { background: #eff6ff; border-left: 2px solid #2563eb; padding: 4px 8px; font-size: 8pt; color: #1e3a8a; border-radius: 0 3px 3px 0; margin-bottom: 3px; line-height: 1.35; }
-.sol-ai-box { margin-top: 6px; padding: 7px 9px; background: linear-gradient(135deg, #eef2ff, #f5f3ff); border: 1px solid #c7d2fe; border-radius: 5px; }
-.sol-ai-header { font-size: 9pt; font-weight: 800; color: #4338ca; margin-bottom: 5px; letter-spacing: 0.3px; }
-.sol-ai-body { font-size: 8.5pt; color: #1e1b4b; line-height: 1.5; }
-.ai-paragraph { text-align: justify; }
 math { font-size: 9pt; } math[display="block"] { display: block; margin: 4px auto; text-align: center; }
 .footer-info { text-align: center; font-size: 7pt; color: #94a3b8; margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 6px; }
 .footer-info .creator-tag { color: #4338ca; font-weight: 600; }
@@ -504,21 +424,30 @@ math { font-size: 9pt; } math[display="block"] { display: block; margin: 4px aut
 
 _MODERN_CSS = _CLASSIC_CSS
 
+
+# ══════════════════════════════════════════════════════════════════════
+# MAIN PDF RENDERER — AI DISABLED
+# ══════════════════════════════════════════════════════════════════════
+
 def render_quiz_pdf(
     quiz_name: str, chat_title: str, questions: list[dict], leaderboard: list[dict],
     session_polls: dict, neg: float, correct_mark: float, output_path: str,
     sections: Optional[list[dict]] = None, bg_image_b64: Optional[str] = None,
-    shuffle_options: bool = False, style: PdfStyle = "classic", use_ai: bool = True,
+    shuffle_options: bool = False, style: PdfStyle = "classic",
+    use_ai: bool = False,
     progress_callback=None,
 ) -> tuple[bool, dict[int, str]]:
+    # HARD KILL SWITCH — AI never runs from PDF path
+    use_ai = False
+
     try:
         from weasyprint import HTML
     except ImportError:
         return False, {}
 
     t_start = time.time()
-    logger.info("▶️  render_quiz_pdf START — quiz=%r, %d questions in session, use_ai=%s",
-                quiz_name, len(session_polls), use_ai)
+    logger.info("▶️  render_quiz_pdf START — quiz=%r, %d questions, AI=DISABLED",
+                quiz_name, len(session_polls))
 
     bg_css = ""
     if bg_image_b64:
@@ -526,7 +455,7 @@ def render_quiz_pdf(
 
     questions_html, answer_key, solutions, ai_solutions = _build_practice_sheet_html(
         questions, session_polls, sections, shuffle_options, style,
-        use_ai=use_ai, progress_callback=progress_callback,
+        use_ai=False, progress_callback=progress_callback,
     )
     answer_key_html = _build_answer_key_html(answer_key)
     solutions_html = _build_solutions_html(solutions)
@@ -551,11 +480,12 @@ def render_quiz_pdf(
 
     try:
         HTML(string=html_content, base_url=".").write_pdf(output_path)
-        logger.info("✅ PDF written in %.1fs → %s", time.time() - t_start, output_path)
-        return True, ai_solutions
+        logger.info("✅ PDF written in %.1fs → %s (no AI solutions)", time.time() - t_start, output_path)
+        return True, {}
     except Exception as e:
         logger.error("WeasyPrint PDF generation failed after %.1fs: %s", time.time() - t_start, e)
-        return False, ai_solutions
+        return False, {}
+
 
 # ══════════════════════════════════════════════════════════════════════
 # NOTES RENDERER (2-COLUMN NEWSPAPER STYLE)
@@ -567,6 +497,7 @@ _NOTES_ORDERED_RE = re.compile(r"^(\s*)((?:[A-Za-z]{1,3}|\d{1,3})[.)])\s+(.*)$")
 _NOTES_FENCE_RE = re.compile(r"^\s*```")
 _NOTES_COLON_HEAD_RE = re.compile(r"^(.{3,90}?)\s*[:：]\s*$")
 
+
 def _notes_inline(text: str) -> str:
     s = _html_mod.escape(text)
     s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
@@ -576,8 +507,10 @@ def _notes_inline(text: str) -> str:
     s = re.sub(r"`([^`\n]+?)`", r"<code>\1</code>", s)
     return s
 
+
 def _parse_notes_text(text: str, default_title: str = "Notes") -> dict:
-    if not text: return {"title": default_title, "blocks": [], "toc": []}
+    if not text:
+        return {"title": default_title, "blocks": [], "toc": []}
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     blocks, toc = [], []
     counters = {"h1": 0, "h2": 0, "h3": 0}
@@ -585,21 +518,30 @@ def _parse_notes_text(text: str, default_title: str = "Notes") -> dict:
 
     def flush_lists():
         nonlocal cur_ul, cur_ol
-        if cur_ul: blocks.append({"type": "ul", "items": cur_ul}); cur_ul = None
-        if cur_ol: blocks.append({"type": "ol", "items": cur_ol}); cur_ol = None
+        if cur_ul:
+            blocks.append({"type": "ul", "items": cur_ul})
+            cur_ul = None
+        if cur_ol:
+            blocks.append({"type": "ol", "items": cur_ol})
+            cur_ol = None
 
     def add_heading(level: int, title: str):
         flush_lists()
         counters[f"h{level}"] += 1
         anchor = f"h{level}-{counters[f'h{level}']}"
         blocks.append({"type": f"h{level}", "text": _notes_inline(title), "anchor": anchor})
-        if level <= 2: toc.append((level, anchor, title))
+        if level <= 2:
+            toc.append((level, anchor, title))
 
     def is_headingish(s: str, nxt: str) -> bool:
-        if not s or len(s) > 130: return False
-        if s[0] in "-•·*◆➤►>": return False
-        if s.endswith((".", "।", ",", ";")): return False
-        if not any(c.isalpha() for c in s): return False
+        if not s or len(s) > 130:
+            return False
+        if s[0] in "-•·*◆➤►>":
+            return False
+        if s.endswith((".", "।", ",", ";")):
+            return False
+        if not any(c.isalpha() for c in s):
+            return False
         n = (nxt or "").strip()
         return (not n) or bool(_NOTES_BULLET_RE.match(nxt or "")) or bool(_NOTES_ORDERED_RE.match(nxt or ""))
 
@@ -609,167 +551,129 @@ def _parse_notes_text(text: str, default_title: str = "Notes") -> dict:
         line = raw.rstrip()
 
         if _NOTES_FENCE_RE.match(line):
-            if in_code: blocks.append({"type": "code", "text": "\n".join(code_buf)}); code_buf, in_code = [], False
-            else: flush_lists(); in_code = True
-            i += 1; continue
-        if in_code: code_buf.append(raw); i += 1; continue
+            if in_code:
+                blocks.append({"type": "code", "text": "\n".join(code_buf)})
+                code_buf, in_code = [], False
+            else:
+                flush_lists()
+                in_code = True
+            i += 1
+            continue
+        if in_code:
+            code_buf.append(raw)
+            i += 1
+            continue
 
         if _NOTES_SEP_RE.match(line):
             if i + 2 < len(lines) and lines[i + 1].strip() and _NOTES_SEP_RE.match(lines[i + 2]):
-                add_heading(1, lines[i + 1].strip()); i += 3; continue
-            flush_lists(); blocks.append({"type": "hr"}); i += 1; continue
+                add_heading(1, lines[i + 1].strip())
+                i += 3
+                continue
+            flush_lists()
+            blocks.append({"type": "hr"})
+            i += 1
+            continue
 
-        if not line.strip(): flush_lists(); i += 1; continue
+        if not line.strip():
+            flush_lists()
+            i += 1
+            continue
 
         m = _NOTES_BULLET_RE.match(line)
         if m:
             indent = len(m.group(1).replace("\t", "    "))
             lvl = 0 if indent < 2 else (1 if indent < 4 else 2)
-            if cur_ul is None or cur_ol is not None: flush_lists(); cur_ul = []
-            cur_ul.append({"level": lvl, "html": _notes_inline(m.group(2))}); i += 1; continue
+            if cur_ul is None or cur_ol is not None:
+                flush_lists()
+                cur_ul = []
+            cur_ul.append({"level": lvl, "html": _notes_inline(m.group(2))})
+            i += 1
+            continue
 
         m = _NOTES_ORDERED_RE.match(line)
         if m:
             indent = len(m.group(1).replace("\t", "    "))
             lvl = 0 if indent < 2 else (1 if indent < 4 else 2)
-            if cur_ol is None or cur_ul is not None: flush_lists(); cur_ol = []
-            cur_ol.append({"level": lvl, "marker": m.group(2), "html": _notes_inline(m.group(3))}); i += 1; continue
+            if cur_ol is None or cur_ul is not None:
+                flush_lists()
+                cur_ol = []
+            cur_ol.append({"level": lvl, "marker": m.group(2), "html": _notes_inline(m.group(3))})
+            i += 1
+            continue
 
         if line.lstrip().startswith(">"):
-            flush_lists(); blocks.append({"type": "quote", "text": _notes_inline(line.lstrip()[1:].strip())}); i += 1; continue
+            flush_lists()
+            blocks.append({"type": "quote", "text": _notes_inline(line.lstrip()[1:].strip())})
+            i += 1
+            continue
 
         cm = _NOTES_COLON_HEAD_RE.match(line.strip())
         if cm and not line.strip().startswith(("-", "•")):
-            add_heading(3, cm.group(1).strip()); i += 1; continue
+            add_heading(3, cm.group(1).strip())
+            i += 1
+            continue
 
         if is_headingish(line.strip(), lines[i + 1] if i + 1 < len(lines) else ""):
-            add_heading(2, line.strip()); i += 1; continue
+            add_heading(2, line.strip())
+            i += 1
+            continue
 
         flush_lists()
         para = [line.strip()]
         j = i + 1
         while j < len(lines):
             nl = lines[j].rstrip()
-            if not nl.strip() or _NOTES_SEP_RE.match(nl) or _NOTES_BULLET_RE.match(nl) or _NOTES_ORDERED_RE.match(nl) or _NOTES_FENCE_RE.match(nl): break
-            if is_headingish(nl.strip(), lines[j + 1] if j + 1 < len(lines) else ""): break
-            if _NOTES_COLON_HEAD_RE.match(nl.strip()) and len(nl.strip()) < 80: break
-            para.append(nl.strip()); j += 1
-        blocks.append({"type": "p", "text": _notes_inline(" ".join(para))}); i = j
+            if not nl.strip() or _NOTES_SEP_RE.match(nl) or _NOTES_BULLET_RE.match(nl) or _NOTES_ORDERED_RE.match(nl) or _NOTES_FENCE_RE.match(nl):
+                break
+            if is_headingish(nl.strip(), lines[j + 1] if j + 1 < len(lines) else ""):
+                break
+            if _NOTES_COLON_HEAD_RE.match(nl.strip()) and len(nl.strip()) < 80:
+                break
+            para.append(nl.strip())
+            j += 1
+        blocks.append({"type": "p", "text": _notes_inline(" ".join(para))})
+        i = j
 
     flush_lists()
-    if in_code and code_buf: blocks.append({"type": "code", "text": "\n".join(code_buf)})
+    if in_code and code_buf:
+        blocks.append({"type": "code", "text": "\n".join(code_buf)})
     h1 = next((b["text"] for b in blocks if b["type"] == "h1"), None)
     title = h1 or default_title
     title = re.sub(r"<[^>]+>", "", title)
     return {"title": title, "blocks": blocks, "toc": toc}
 
-# 🔥 UPDATED CSS FOR 2-COLUMN LAYOUT
+
 _NOTES_PDF_CSS = """
-@page {
-  size: A4;
-  margin: 1.2cm 1.2cm 1.4cm 1.2cm;
-  @bottom-center {
-    content: "Page " counter(page) " of " counter(pages);
-    font-family: 'Noto Sans', sans-serif; font-size: 8pt; color: #94a3b8;
-  }
-}
-body {
-  font-family: 'Noto Sans', 'Noto Sans Devanagari', sans-serif;
-  color: #1e293b; font-size: 9.5pt; line-height: 1.5; background: #fff;
-  orphans: 3;
-  widows: 3;
-}
-.notes-cover {
-  page-break-after: always;
-  text-align: center; padding-top: 6cm;
-}
+@page { size: A4; margin: 1.2cm 1.2cm 1.4cm 1.2cm; @bottom-center { content: "Page " counter(page) " of " counter(pages); font-family: 'Noto Sans', sans-serif; font-size: 8pt; color: #94a3b8; } }
+body { font-family: 'Noto Sans', 'Noto Sans Devanagari', sans-serif; color: #1e293b; font-size: 9.5pt; line-height: 1.5; background: #fff; orphans: 3; widows: 3; }
+.notes-cover { page-break-after: always; text-align: center; padding-top: 6cm; }
 .cover-icon { font-size: 60pt; margin-bottom: 22pt; }
-.cover-title {
-  font-family: 'Merriweather', serif;
-  font-size: 26pt; color: #1e3a8a; margin: 0 0 10pt 0;
-  letter-spacing: -0.3pt; line-height: 1.2;
-}
-.cover-meta {
-  font-size: 10pt; color: #64748b;
-  letter-spacing: 0.4pt; text-transform: uppercase;
-}
-
-/* 2-COLUMN LAYOUT WRAPPER */
-.notes-content {
-  column-count: 2;
-  column-gap: 16pt;
-  column-rule: 1pt solid #e2e8f0; /* Beech ki line */
-}
-
-.notes-h1 {
-  column-span: all; /* Heading pure page par fail jaye */
-  background: linear-gradient(90deg, #1e3a8a, #2563eb);
-  color: #fff; padding: 6pt 12pt; margin: 12pt 0 8pt 0;
-  font-family: 'Merriweather', serif; font-size: 13pt; font-weight: 700;
-  border-radius: 4pt; letter-spacing: 0.3pt; page-break-after: avoid;
-}
-.notes-h2 {
-  column-span: all;
-  color: #1e3a8a; font-size: 11pt; font-weight: 700;
-  margin: 10pt 0 4pt 0; padding: 4pt 0 4pt 10pt;
-  border-left: 4pt solid #2563eb; background: #eff6ff;
-  border-radius: 0 4pt 4pt 0; page-break-after: avoid;
-}
-.notes-h3 {
-  color: #4338ca; font-size: 10pt; font-weight: 700;
-  margin: 8pt 0 3pt 0; page-break-after: avoid;
-}
-.notes-p { 
-  margin: 0 0 6pt 0; 
-  text-align: justify; 
-  color: #334155;
-  break-inside: avoid; /* Line ko beech se na tode */
-}
-
-.notes-ul, .notes-ol { 
-  margin: 2pt 0 6pt 0; 
-  padding-left: 2pt; 
-  list-style: none; 
-}
-.notes-ul li, .notes-ol li {
-  padding-left: 2pt; margin-bottom: 3pt; color: #334155;
-  line-height: 1.5; 
-  break-inside: avoid; /* Question ko columns me na tode */
-  page-break-inside: avoid;
-}
+.cover-title { font-family: 'Merriweather', serif; font-size: 26pt; color: #1e3a8a; margin: 0 0 10pt 0; letter-spacing: -0.3pt; line-height: 1.2; }
+.cover-meta { font-size: 10pt; color: #64748b; letter-spacing: 0.4pt; text-transform: uppercase; }
+.notes-content { column-count: 2; column-gap: 16pt; column-rule: 1pt solid #e2e8f0; }
+.notes-h1 { column-span: all; background: linear-gradient(90deg, #1e3a8a, #2563eb); color: #fff; padding: 6pt 12pt; margin: 12pt 0 8pt 0; font-family: 'Merriweather', serif; font-size: 13pt; font-weight: 700; border-radius: 4pt; letter-spacing: 0.3pt; page-break-after: avoid; }
+.notes-h2 { column-span: all; color: #1e3a8a; font-size: 11pt; font-weight: 700; margin: 10pt 0 4pt 0; padding: 4pt 0 4pt 10pt; border-left: 4pt solid #2563eb; background: #eff6ff; border-radius: 0 4pt 4pt 0; page-break-after: avoid; }
+.notes-h3 { color: #4338ca; font-size: 10pt; font-weight: 700; margin: 8pt 0 3pt 0; page-break-after: avoid; }
+.notes-p { margin: 0 0 6pt 0; text-align: justify; color: #334155; break-inside: avoid; }
+.notes-ul, .notes-ol { margin: 2pt 0 6pt 0; padding-left: 2pt; list-style: none; }
+.notes-ul li, .notes-ol li { padding-left: 2pt; margin-bottom: 3pt; color: #334155; line-height: 1.5; break-inside: avoid; page-break-inside: avoid; }
 .notes-ul li.indent-1 { padding-left: 12pt; }
 .notes-ul li.indent-2 { padding-left: 24pt; }
 .notes-ol li.indent-1 { padding-left: 12pt; }
 .notes-ol li.indent-2 { padding-left: 24pt; }
-
 .notes-ul .bm { color: #2563eb; font-weight: 700; margin-right: 4pt; }
 .notes-ol .om { color: #1e3a8a; font-weight: 700; margin-right: 4pt; }
-
-.notes-quote {
-  margin: 6pt 0; padding: 4pt 8pt;
-  border-left: 3pt solid #f59e0b; background: #fef3c7;
-  font-style: italic; color: #78350f; border-radius: 0 4pt 4pt 0;
-  break-inside: avoid;
-}
-.notes-pre {
-  margin: 6pt 0; padding: 6pt 8pt;
-  background: #f1f5f9; border-left: 3pt solid #64748b;
-  border-radius: 4pt; overflow-x: auto;
-  font-family: 'Courier New', monospace; font-size: 8pt;
-  break-inside: avoid;
-}
+.notes-quote { margin: 6pt 0; padding: 4pt 8pt; border-left: 3pt solid #f59e0b; background: #fef3c7; font-style: italic; color: #78350f; border-radius: 0 4pt 4pt 0; break-inside: avoid; }
+.notes-pre { margin: 6pt 0; padding: 6pt 8pt; background: #f1f5f9; border-left: 3pt solid #64748b; border-radius: 4pt; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 8pt; break-inside: avoid; }
 .notes-hr { border: none; border-top: 1pt dashed #cbd5e1; margin: 10pt 0; column-span: all; }
-code {
-  background: #f1f5f9; padding: 1pt 3pt; border-radius: 3pt;
-  font-family: 'Courier New', monospace; font-size: 8.5pt;
-}
+code { background: #f1f5f9; padding: 1pt 3pt; border-radius: 3pt; font-family: 'Courier New', monospace; font-size: 8.5pt; }
 """
+
 
 def _render_notes_body_html(parsed: dict, cover_title: str) -> str:
     parts: list[str] = []
     n_h2 = sum(1 for b in parsed["blocks"] if b["type"] == "h2")
-    
-    # Cover Page (Full Width)
+
     parts.append(
         '<section class="notes-cover">'
         f'<div class="cover-icon">📓</div>'
@@ -778,7 +682,6 @@ def _render_notes_body_html(parsed: dict, cover_title: str) -> str:
         "</section>"
     )
 
-    # Content Wrapper (2 Columns)
     parts.append('<div class="notes-content">')
 
     for b in parsed["blocks"]:
@@ -807,9 +710,10 @@ def _render_notes_body_html(parsed: dict, cover_title: str) -> str:
         elif t == "hr":
             parts.append('<hr class="notes-hr">')
 
-    parts.append('</div>') # End notes-content
+    parts.append('</div>')
 
     return "\n".join(parts)
+
 
 def render_notes_pdf(
     text: str,
