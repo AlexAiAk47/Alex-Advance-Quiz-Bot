@@ -3,6 +3,9 @@ Advance Quiz Bot — Open Source Project
 This project was originally developed by Gagan (github.com/devgaganin).
 Reference: https://t.me/advance_quiz_bot
 The codebase has been reviewed and verified with the assistance of Claude AI.
+
+⚠️ MODIFIED: /aiset is now the PRIMARY command for AI quiz generation.
+The old /aiquiz command is kept as backward-compatible alias.
 """
 
 from __future__ import annotations
@@ -114,7 +117,6 @@ async def _launch_ai_quiz(
     shuffle_o_count: int = 0, chat_id: int = None, chat_type: str = "private",
     update: Any = None, show_explanation: bool = False,
 ) -> None:
-    """Launch a live-generated quiz in the chat the command was issued from."""
     from .quiz_play import run_group_quiz, start_private_quiz
 
     chat_id = chat_id or uid
@@ -163,7 +165,7 @@ async def _launch_ai_quiz(
 
 
 async def aiquiz_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-    """`/aiquiz <topic>` -- starts the wizard."""
+    """/aiset <topic> -- starts the AI quiz wizard. (Also responds to /aiquiz)"""
     chat_id = update.message.chat_id
     try:
         user_id = update.message.from_user.id
@@ -174,8 +176,8 @@ async def aiquiz_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None
             await safe_send_message(
                 ctx, chat_id,
                 "\U0001F916 <b>AI Quiz Generator</b>\n\n"
-                "Usage: <code>/aiquiz &lt;topic&gt;</code>\n"
-                "Example: <code>/aiquiz Indian History</code>\n\n"
+                "Usage: <code>/aiset &lt;topic&gt;</code>\n"
+                "Example: <code>/aiset Indian History</code>\n\n"
                 "No DB storage — questions generated live, quiz starts immediately!\n"
                 "Add your own AI key via <code>/setkey gemini AIzaSy...</code> for faster, higher-quality results.\n"
                 "Without a key, a free fallback provider is used automatically.",
@@ -215,7 +217,7 @@ async def aiquiz_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> Non
 
         sess = AI_QUIZ_SESSIONS.get(uid)
         if not sess:
-            await query.message.edit_text("❌ Session expired. /aiquiz again")
+            await query.message.edit_text("❌ Session expired. /aiset again")
             return
 
         msg = query.message
@@ -411,5 +413,8 @@ async def _aiquiz_generate_flow(uid: int, ctx: ContextTypes.DEFAULT_TYPE, msg: A
 
 
 def register(application: Application) -> None:
+    # ✅ /aiset is the PRIMARY command
+    application.add_handler(CommandHandler("aiset", aiquiz_command))
+    # Backward-compat: /aiquiz also works (remove this line if you want ONLY /aiset)
     application.add_handler(CommandHandler("aiquiz", aiquiz_command))
     application.add_handler(CallbackQueryHandler(aiquiz_callback, pattern="^aiq_"))
