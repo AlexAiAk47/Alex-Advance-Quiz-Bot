@@ -12,6 +12,11 @@ import argparse
 import asyncio
 import logging
 import signal
+import os
+import platform
+import subprocess
+import ctypes.util
+import shutil
 
 from quizbot.database import init_db, close_db
 from quizbot.shared import config
@@ -26,6 +31,46 @@ logger = logging.getLogger("launcher")
 # Silence noisy third-party debug logs by default.
 for noisy in ("httpx", "httpcore", "apscheduler", "pymongo"):
     logging.getLogger(noisy).setLevel(logging.WARNING)
+
+
+def auto_install_dependencies():
+    """Auto-install WeasyPrint system dependencies on Linux if missing."""
+    if platform.system() != "Linux":
+        return
+
+    # Agar apt-get available nahi hai (jaise Heroku par), toh skip karein
+    if not shutil.which("apt-get"):
+        logger.info("apt-get not found. Skipping auto-install (Use Aptfile if on Heroku).")
+        return
+
+    # Check karein ki library pehle se installed hai ya nahi
+    if ctypes.util.find_library("gobject-2.0") is not None:
+        return  # Pehle se hai, kuch karne ki zaroorat nahi
+
+    logger.warning("Missing system libraries for PDF/HTML generation. Auto-installing...")
+    
+    libs = [
+        "libpango-1.0-0", "libpangocairo-1.0-0", "libcairo2",
+        "libgdk-pixbuf-2.0-0", "shared-mime-info", "libffi-dev"
+    ]
+
+    try:
+        # Check karein ki script root (sudo) par chal rahi hai ya normal user
+        use_sudo = os.geteuid() != 0
+        prefix = ["sudo"] if use_sudo else []
+
+        logger.info("Running apt-get update...")
+        subprocess.run(prefix + ["apt-get", "update", "-y"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        logger.info("Installing PDF libraries...")
+        subprocess.run(prefix + ["apt-get", "install", "-y"] + libs, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        logger.info("✅ Libraries installed successfully!")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"❌ Auto-install failed. Please run manually: sudo apt-get install -y {' '.join(libs)}")
+        logger.error(f"Error: {e}")
+    except Exception as e:
+        logger.error(f"❌ Error during auto-install: {e}")
 
 
 async def _run_creator_bot() -> None:
@@ -61,10 +106,6 @@ async def main(only: str | None) -> None:
     await init_db(config.MONGODB_URI, config.MONGODB_DB_NAME)
     logger.info("Database ready.")
 
-    # The Mini App (web player) runs in this same process/service by default:
-    # on a PaaS the platform routes external traffic to $PORT, so the bots and
-    # the HTTP server must be one service. `--only creator|runner` leaves it
-    # out; RUN_MINI_APP=false switches it off for `python run.py` too.
     want_mini_app = only == "miniapp" or (only is None and config.RUN_MINI_APP)
 
     tasks: list[asyncio.Task] = []
@@ -89,8 +130,7 @@ async def main(only: str | None) -> None:
             logger.warning(
                 "Mini App server is running on port %s but no public URL is known yet, "
                 "so the bots will skip their 'Play' buttons. Attach a public domain to "
-                "this service (Railway: Settings -> Networking -> Generate Domain) or set "
-                "MINI_APP_DOMAIN, then redeploy.",
+                "this service or set MINI_APP_DOMAIN, then redeploy.",
                 config.MINI_APP_PORT,
             )
 
@@ -114,7 +154,6 @@ async def main(only: str | None) -> None:
             return_when=asyncio.FIRST_COMPLETED,
         )
         for t in done:
-            # .exception() re-raises CancelledError, so check that first.
             if t.cancelled():
                 continue
             exc = t.exception()
@@ -133,13 +172,13 @@ async def main(only: str | None) -> None:
         logger.info("Shutdown complete.")
 
     if crashed is not None:
-        # Non-zero exit: on Railway (restart policy ON_FAILURE) the service is
-        # restarted automatically instead of sitting there half-dead with one
-        # bot silently gone.
         raise SystemExit(1)
 
 
 if __name__ == "__main__":
+    # Start hone se pehle libraries check karein aur install karein
+    auto_install_dependencies()
+
     parser = argparse.ArgumentParser(description="Run the Advance Quiz Bot platform.")
     parser.add_argument(
         "--only", choices=["creator", "runner", "miniapp"], default=None,
