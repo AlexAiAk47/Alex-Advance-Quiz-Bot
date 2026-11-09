@@ -15,19 +15,16 @@ import uuid
 from typing import Any
 
 # --------------------------------------------------------------------------
-# Small local helpers (no external deps -- stdlib only)
+# Small local helpers
 # --------------------------------------------------------------------------
 
-
 def _esc(value: Any) -> str:
-    """Escape arbitrary input for safe interpolation into HTML text nodes."""
     if value is None:
         return ""
     return html.escape(str(value), quote=True)
 
 
 def _slug(text: str, fallback: str = "quiz") -> str:
-    """Turn a quiz name into a filesystem-safe filename stem."""
     text = (text or "").strip().lower()
     cleaned = "".join(ch if ch.isalnum() else "-" for ch in text)
     cleaned = "-".join(part for part in cleaned.split("-") if part)
@@ -35,15 +32,12 @@ def _slug(text: str, fallback: str = "quiz") -> str:
 
 
 def _js_literal(value: Any) -> str:
-    """Serialize a Python value to a JSON literal safe for embedding in a
-    <script> block (also neutralizes '</script>' breakout sequences)."""
     raw = json.dumps(value, ensure_ascii=False)
     return raw.replace("</", "<\\/")
 
 
 # --------------------------------------------------------------------------
-# Shared design system: CSS variables, base layout, dark-mode toggle.
-# Both report types import this so the two documents look like one family.
+# Shared design system
 # --------------------------------------------------------------------------
 
 _GOOGLE_FONTS_LINK = (
@@ -68,7 +62,6 @@ _CHARTJS_SCRIPT = (
     'crossorigin="anonymous" referrerpolicy="no-referrer"></script>'
 )
 
-# Core design tokens + resets shared by both page types.
 _BASE_CSS = """
 :root {
   --color-bg: #f4f6fb;
@@ -96,7 +89,6 @@ _BASE_CSS = """
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, Helvetica, Arial, sans-serif;
 }
-
 html[data-theme="dark"] {
   --color-bg: #0f1320;
   --color-surface: #161b2c;
@@ -118,173 +110,56 @@ html[data-theme="dark"] {
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 20px 45px rgba(0, 0, 0, 0.55);
 }
-
 * { box-sizing: border-box; }
-
 html, body {
-  margin: 0;
-  padding: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
+  margin: 0; padding: 0; background: var(--color-bg); color: var(--color-text);
+  font-family: var(--font-body); -webkit-font-smoothing: antialiased;
   transition: background 0.25s ease, color 0.25s ease;
 }
-
 body { min-height: 100vh; }
-
 a { color: inherit; }
-
-.container {
-  width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 clamp(12px, 3vw, 28px);
-}
-
-.card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 10px 18px;
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
-  user-select: none;
-}
+.container { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 clamp(12px, 3vw, 28px); }
+.card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: var(--radius-sm); padding: 10px 18px; font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease; user-select: none; }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
 .btn-primary { background: var(--color-primary); color: #fff; }
 .btn-primary:hover:not(:disabled) { background: var(--color-primary-dark); }
-
-.btn-outline {
-  background: transparent;
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-}
+.btn-outline { background: transparent; color: var(--color-text); border: 1px solid var(--color-border); }
 .btn-outline:hover:not(:disabled) { background: var(--color-surface-alt); }
-
-.btn-ghost {
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-}
+.btn-ghost { background: var(--color-surface-alt); color: var(--color-text); }
 .btn-ghost:hover:not(:disabled) { background: var(--color-border); }
-
-.btn-danger { background: var(--color-danger); color: #fff; }
-.btn-success { background: var(--color-success); color: #fff; }
-
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-}
-.topbar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px clamp(12px, 3vw, 28px);
-  max-width: 1180px;
-  margin: 0 auto;
-}
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 800;
-  font-size: 1.05rem;
-  letter-spacing: -0.01em;
-}
+.topbar { position: sticky; top: 0; z-index: 40; background: var(--color-surface); border-bottom: 1px solid var(--color-border); box-shadow: var(--shadow-sm); }
+.topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px clamp(12px, 3vw, 28px); max-width: 1180px; margin: 0 auto; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; }
 .brand i { color: var(--color-primary); }
-
-.theme-toggle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  flex: 0 0 auto;
-}
+.theme-toggle { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--color-border); background: var(--color-surface-alt); color: var(--color-text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; flex: 0 0 auto; }
 .theme-toggle:hover { background: var(--color-border); }
-
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 10px;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 10px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; }
 .badge-primary { background: var(--color-primary-soft); color: var(--color-primary); }
 .badge-success { background: var(--color-success-soft); color: var(--color-success); }
 .badge-danger  { background: var(--color-danger-soft);  color: var(--color-danger); }
 .badge-warning { background: var(--color-warning-soft); color: var(--color-warning); }
-
-.visually-hidden {
-  position: absolute !important;
-  width: 1px; height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-footer.site-footer {
-  text-align: center;
-  color: var(--color-text-muted);
-  font-size: 0.82rem;
-  padding: 28px 12px 40px;
-}
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+footer.site-footer { text-align: center; color: var(--color-text-muted); font-size: 0.82rem; padding: 28px 12px 40px; }
 """
 
-# JS shared by both page types: theme persistence + toggle wiring.
 _THEME_JS = """
 (function () {
   var root = document.documentElement;
   var stored = null;
   try { stored = localStorage.getItem('quiz-theme'); } catch (e) {}
   if (stored === 'dark') { root.setAttribute('data-theme', 'dark'); }
-
   function applyIcon() {
     var btn = document.getElementById('themeToggleBtn');
     if (!btn) return;
     var isDark = root.getAttribute('data-theme') === 'dark';
-    btn.innerHTML = isDark
-      ? '<i class="fa-solid fa-sun"></i>'
-      : '<i class="fa-solid fa-moon"></i>';
+    btn.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
     btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
   }
-
   window.addEventListener('DOMContentLoaded', function () {
     applyIcon();
     var btn = document.getElementById('themeToggleBtn');
@@ -307,7 +182,6 @@ _THEME_JS = """
 
 
 def _topbar_html(title: str, subtitle: str = "") -> str:
-    """Sticky header shared by both report types."""
     sub = f'<div class="topbar-sub">{_esc(subtitle)}</div>' if subtitle else ""
     return f"""
 <div class="topbar">
@@ -316,8 +190,7 @@ def _topbar_html(title: str, subtitle: str = "") -> str:
       <i class="fa-solid fa-layer-group"></i>
       <span>{_esc(title)}</span>
     </div>
-    <button id="themeToggleBtn" class="theme-toggle" type="button"
-      aria-label="Toggle dark mode">
+    <button id="themeToggleBtn" class="theme-toggle" type="button" aria-label="Toggle dark mode">
       <i class="fa-solid fa-moon"></i>
     </button>
   </div>
@@ -327,7 +200,6 @@ def _topbar_html(title: str, subtitle: str = "") -> str:
 
 
 def _page_shell(*, title: str, extra_head: str, body: str, extra_scripts: str) -> str:
-    """Wrap CSS/body/JS fragments into one complete HTML document."""
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -349,227 +221,74 @@ def _page_shell(*, title: str, extra_head: str, body: str, extra_scripts: str) -
 """
 
 
-# --------------------------------------------------------------------------
-# render_quiz_html: CBT-exam-style interactive quiz page
-# --------------------------------------------------------------------------
-
 _QUIZ_CSS = """
-.exam-layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-  padding: 20px 0 60px;
-}
-@media (min-width: 900px) {
-  .exam-layout { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
-}
-
-.exam-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 20px;
-  margin-bottom: 4px;
-}
+.exam-layout { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 20px 0 60px; }
+@media (min-width: 900px) { .exam-layout { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; } }
+.exam-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px; margin-bottom: 4px; }
 .exam-title { font-size: 1.15rem; font-weight: 800; }
 .exam-meta { color: var(--color-text-muted); font-size: 0.85rem; margin-top: 2px; }
-
-.timer-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-size: 1.05rem;
-}
+.timer-pill { display: inline-flex; align-items: center; gap: 8px; background: var(--color-primary-soft); color: var(--color-primary); font-weight: 800; font-variant-numeric: tabular-nums; padding: 8px 16px; border-radius: 999px; font-size: 1.05rem; }
 .timer-pill.low { background: var(--color-danger-soft); color: var(--color-danger); }
-
 .question-card { padding: 24px clamp(16px, 4vw, 32px); margin-bottom: 16px; }
-.question-index {
-  color: var(--color-text-muted);
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-.question-text {
-  font-size: 1.15rem;
-  font-weight: 600;
-  line-height: 1.55;
-  margin-bottom: 22px;
-  white-space: pre-wrap;
-}
-
+.question-index { color: var(--color-text-muted); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 10px; }
+.question-text { font-size: 1.15rem; font-weight: 600; line-height: 1.55; margin-bottom: 22px; white-space: pre-wrap; }
 .option-list { display: flex; flex-direction: column; gap: 12px; }
-.option {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 14px 16px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  background: var(--color-surface);
-  transition: border-color 0.12s ease, background 0.12s ease;
-}
+.option { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border: 1.5px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; background: var(--color-surface); transition: border-color 0.12s ease, background 0.12s ease; }
 .option:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
 .option.selected { border-color: var(--color-primary); background: var(--color-primary-soft); }
 .option.correct { border-color: var(--color-success); background: var(--color-success-soft); }
 .option.incorrect { border-color: var(--color-danger); background: var(--color-danger-soft); }
-.option-key {
-  flex: 0 0 auto;
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  border: 1.5px solid var(--color-border);
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 0.85rem;
-  background: var(--color-surface-alt);
-}
+.option-key { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--color-border); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; background: var(--color-surface-alt); }
 .option.selected .option-key { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
 .option.correct .option-key { background: var(--color-success); color: #fff; border-color: var(--color-success); }
 .option.incorrect .option-key { background: var(--color-danger); color: #fff; border-color: var(--color-danger); }
 .option-text { padding-top: 3px; line-height: 1.5; }
 .option-icon { margin-left: auto; padding-top: 4px; font-size: 1rem; }
-
-.explanation-box {
-  margin-top: 18px;
-  padding: 14px 16px;
-  border-radius: var(--radius-md);
-  background: var(--color-surface-alt);
-  border-left: 4px solid var(--color-accent);
-  font-size: 0.92rem;
-  line-height: 1.55;
-  display: none;
-}
+.explanation-box { margin-top: 18px; padding: 14px 16px; border-radius: var(--radius-md); background: var(--color-surface-alt); border-left: 4px solid var(--color-accent); font-size: 0.92rem; line-height: 1.55; display: none; }
 .explanation-box.show { display: block; }
 .explanation-box strong { color: var(--color-accent); }
-
-.exam-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: space-between;
-  padding: 4px 2px;
-}
+.exam-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; padding: 4px 2px; }
 .exam-actions .group { display: flex; gap: 10px; flex-wrap: wrap; }
-
 .sidebar { display: flex; flex-direction: column; gap: 16px; }
 .sidebar-card { padding: 18px; }
-.sidebar-title {
-  font-weight: 800;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--color-text-muted);
-  margin-bottom: 12px;
-}
-.qgrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
-  gap: 8px;
-}
-.qgrid button {
-  aspect-ratio: 1 / 1;
-  border-radius: 8px;
-  border: 1.5px solid var(--color-border);
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-  font-weight: 700;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
+.sidebar-title { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--color-text-muted); margin-bottom: 12px; }
+.qgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 8px; }
+.qgrid button { aspect-ratio: 1 / 1; border-radius: 8px; border: 1.5px solid var(--color-border); background: var(--color-surface-alt); color: var(--color-text); font-weight: 700; font-size: 0.82rem; cursor: pointer; }
 .qgrid button.current { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 .qgrid button.answered { background: var(--color-success); color: #fff; border-color: var(--color-success); }
 .qgrid button.review { background: var(--color-warning); color: #fff; border-color: var(--color-warning); }
 .qgrid button.answered-review { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
 .qgrid button.unanswered { background: var(--color-surface-alt); }
-
-.legend { display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem; margin-top: 14px; }
-.legend-item { display: flex; align-items: center; gap: 8px; }
-.legend-dot { width: 12px; height: 12px; border-radius: 4px; flex: 0 0 auto; }
-
-.progress-track {
-  height: 8px;
-  border-radius: 999px;
-  background: var(--color-surface-alt);
-  overflow: hidden;
-  margin-top: 10px;
-}
-.progress-fill {
-  height: 100%;
-  background: var(--color-primary);
-  border-radius: 999px;
-  transition: width 0.25s ease;
-}
-
-/* Results screen */
-.results-hero {
-  text-align: center;
-  padding: 40px clamp(16px, 5vw, 48px);
-  margin-bottom: 20px;
-}
-.results-score {
-  font-size: clamp(2.4rem, 8vw, 3.2rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 6px 0;
-}
-.results-verdict {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 18px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  margin-top: 8px;
-}
+.progress-track { height: 8px; border-radius: 999px; background: var(--color-surface-alt); overflow: hidden; margin-top: 10px; }
+.progress-fill { height: 100%; background: var(--color-primary); border-radius: 999px; transition: width 0.25s ease; }
+.results-hero { text-align: center; padding: 40px clamp(16px, 5vw, 48px); margin-bottom: 20px; }
+.results-score { font-size: clamp(2.4rem, 8vw, 3.2rem); font-weight: 800; letter-spacing: -0.02em; margin: 6px 0; }
+.results-verdict { display: inline-flex; align-items: center; gap: 8px; padding: 6px 18px; border-radius: 999px; font-weight: 700; font-size: 0.95rem; margin-top: 8px; }
 .results-verdict.pass { background: var(--color-success-soft); color: var(--color-success); }
 .results-verdict.fail { background: var(--color-danger-soft); color: var(--color-danger); }
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-top: 26px;
-}
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 26px; }
 @media (min-width: 640px) { .stat-grid { grid-template-columns: repeat(4, 1fr); } }
-.stat-tile {
-  background: var(--color-surface-alt);
-  border-radius: var(--radius-md);
-  padding: 16px 12px;
-  text-align: center;
-}
+.stat-tile { background: var(--color-surface-alt); border-radius: var(--radius-md); padding: 16px 12px; text-align: center; }
 .stat-tile .value { font-size: 1.5rem; font-weight: 800; }
 .stat-tile .label { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 2px; }
-
 .review-toggle-wrap { text-align: center; margin: 24px 0; }
-
 #reviewSection { display: none; }
 #reviewSection.show { display: block; }
-
 .hidden { display: none !important; }
-
 @media (max-width: 899px) {
   .sidebar { order: -1; }
   .qgrid { grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); }
 }
 """
 
-# JS template for the exam runner. `%%DATA%%` is replaced with a JSON blob
-# describing the quiz; everything else is static behaviour.
+# NOTE: _QUIZ_JS_TEMPLATE below is kept for reference/back-compat — the actual
+# player JS is inlined inside render_quiz_html() (with proper f-string brace
+# escaping). Do not remove unless you also clean up any external references.
 _QUIZ_JS_TEMPLATE = """
 (function () {
   var QUIZ = %%DATA%%;
   var questions = QUIZ.questions;
-  var totalTime = QUIZ.timerPerQuestion; // seconds, per question
+  var totalTime = QUIZ.timerPerQuestion;
   var correctMarks = QUIZ.correctMarks;
   var negativeMarks = QUIZ.negativeMarks;
 
@@ -797,7 +516,7 @@ _QUIZ_JS_TEMPLATE = """
         var expl = document.createElement('div');
         expl.className = 'explanation-box show';
         var strong = document.createElement('strong');
-        strong.textContent = 'Explanation: ';
+        strong.textContent = (qd.expLabel || 'Explanation') + ': ';
         expl.appendChild(strong);
         expl.appendChild(document.createTextNode(qd.explanation));
         card.appendChild(expl);
@@ -856,247 +575,63 @@ _QUIZ_JS_TEMPLATE = """
 
 
 def _je(t: Any) -> str:
-    """JS string-literal escape (matches the legacy generator's `je()`
-    helper exactly -- used only inside JS string literals we hand-build,
-    not via json.dumps, to stay byte-for-byte compatible with the ported
-    generator)."""
     if not t:
         return ""
     t = str(t)
-    return (
-        t.replace("\\", "\\\\")
-        .replace('"', '\\"')
-        .replace("'", "\\'")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-        .replace("\t", "\\t")
-    )
+    return (t.replace("\\", "\\\\").replace('"', '\\"').replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t"))
 
 
-# Desktop CBT (computer-based-test) responsive styles, ported verbatim.
 _QUIZ_DESKTOP_CSS = """
 @media (min-width: 1024px) {
     body { overflow: auto !important; }
-
-    #quizContainer {
-        display: grid !important;
-        grid-template-columns: 1fr 320px;
-        grid-template-rows: auto 1fr auto;
-        gap: 0;
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    .quiz-header {
-        grid-column: 1 / -1;
-        position: static;
-        padding: 20px 32px;
-        border-bottom: 3px solid var(--border);
-    }
-
-    .header-top {
-        max-width: none;
-        margin-bottom: 16px;
-    }
-
+    #quizContainer { display: grid !important; grid-template-columns: 1fr 320px; grid-template-rows: auto 1fr auto; gap: 0; height: 100vh; overflow: hidden; }
+    .quiz-header { grid-column: 1 / -1; position: static; padding: 20px 32px; border-bottom: 3px solid var(--border); }
+    .header-top { max-width: none; margin-bottom: 16px; }
     .quiz-title-text { max-width: 400px; }
-
-    .timer-display {
-        padding: 10px 20px;
-        font-size: 18px;
-    }
-
-    /* Main content area - scrollable */
-    .question-section {
-        position: static !important;
-        grid-column: 1;
-        grid-row: 2;
-        overflow-y: auto;
-        padding: 32px;
-        background: var(--bg-light);
-        top: auto !important;
-        bottom: auto !important;
-    }
-
-    .question-card {
-        max-width: 900px;
-        padding: 32px;
-        margin: 0 auto 24px;
-    }
-
-    .question-text {
-        font-size: 18px;
-        margin-bottom: 24px;
-    }
-
-    .option-btn {
-        padding: 18px 20px;
-        font-size: 16px;
-    }
-
-    .option-indicator {
-        min-width: 32px;
-        height: 32px;
-        font-size: 14px;
-    }
-
-    /* Desktop Question Navigator - Right Panel */
-    .question-nav-panel {
-        position: static !important;
-        grid-column: 2;
-        grid-row: 2;
-        transform: none !important;
-        max-height: none;
-        height: 100%;
-        border-radius: 0;
-        border-left: 3px solid var(--border);
-        box-shadow: none;
-        padding: 24px;
-        overflow-y: auto;
-        background: var(--bg-white);
-    }
-
+    .timer-display { padding: 10px 20px; font-size: 18px; }
+    .question-section { position: static !important; grid-column: 1; grid-row: 2; overflow-y: auto; padding: 32px; background: var(--bg-light); top: auto !important; bottom: auto !important; }
+    .question-card { max-width: 900px; padding: 32px; margin: 0 auto 24px; }
+    .question-text { font-size: 18px; margin-bottom: 24px; }
+    .option-btn { padding: 18px 20px; font-size: 16px; }
+    .option-indicator { min-width: 32px; height: 32px; font-size: 14px; }
+    .question-nav-panel { position: static !important; grid-column: 2; grid-row: 2; transform: none !important; max-height: none; height: 100%; border-radius: 0; border-left: 3px solid var(--border); box-shadow: none; padding: 24px; overflow-y: auto; background: var(--bg-white); }
     .question-nav-panel.open { transform: none !important; }
-
-    .nav-panel-header {
-        position: sticky;
-        top: 0;
-        background: var(--bg-white);
-        z-index: 10;
-        padding-bottom: 20px;
-        margin-bottom: 20px;
-    }
-
-    .nav-panel-title {
-        font-size: 16px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
+    .nav-panel-header { position: sticky; top: 0; background: var(--bg-white); z-index: 10; padding-bottom: 20px; margin-bottom: 20px; }
+    .nav-panel-title { font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
     .nav-close-btn { display: none; }
-
-    .nav-legend {
-        position: sticky;
-        top: 60px;
-        background: var(--bg-white);
-        z-index: 9;
-        padding: 16px;
-        margin: -16px -16px 20px;
-        border-radius: 12px;
-        background: var(--bg-light);
-    }
-
-    .question-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-    }
-
-    .question-nav-item {
-        aspect-ratio: 1;
-        font-size: 16px;
-        border-radius: 12px;
-    }
-
+    .nav-legend { position: sticky; top: 60px; background: var(--bg-white); z-index: 9; padding: 16px; margin: -16px -16px 20px; border-radius: 12px; background: var(--bg-light); }
+    .question-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .question-nav-item { aspect-ratio: 1; font-size: 16px; border-radius: 12px; }
     .question-nav-toggle { display: none; }
-
-    /* Footer Navigation - Sticky */
-    .nav-controls {
-        position: static;
-        grid-column: 1;
-        grid-row: 3;
-        padding: 20px 32px;
-        border-top: 3px solid var(--border);
-        max-width: none;
-        display: flex;
-        justify-content: center;
-        gap: 16px;
-    }
-
-    .nav-btn {
-        min-width: 160px;
-        padding: 16px 24px;
-        font-size: 16px;
-    }
-
-    /* Results Desktop Layout */
-    #resultsContainer {
-        padding: 40px;
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    .results-header {
-        padding: 60px 40px;
-        margin-bottom: 32px;
-    }
-
+    .nav-controls { position: static; grid-column: 1; grid-row: 3; padding: 20px 32px; border-top: 3px solid var(--border); max-width: none; display: flex; justify-content: center; gap: 16px; }
+    .nav-btn { min-width: 160px; padding: 16px 24px; font-size: 16px; }
+    #resultsContainer { padding: 40px; max-width: 1400px; margin: 0 auto; }
+    .results-header { padding: 60px 40px; margin-bottom: 32px; }
     .results-icon { font-size: 100px; }
     .results-title { font-size: 36px; }
     .results-score { font-size: 64px; }
     .results-percentage { font-size: 24px; }
-
-    .stats-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
-        margin-bottom: 32px;
-        max-width: none;
-    }
-
+    .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; max-width: none; }
     .stat-card { padding: 32px; }
     .stat-icon { width: 54px; height: 54px; font-size: 24px; }
     .stat-value { font-size: 40px; }
     .stat-label { font-size: 14px; }
-
-    .action-buttons {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        max-width: 800px;
-    }
-
+    .action-buttons { grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 800px; }
     .action-btn { padding: 20px; font-size: 17px; }
-
-    /* Mode Selection Desktop */
-    .mode-container {
-        max-width: 600px;
-        padding: 50px 40px;
-    }
-
-    .mode-header-icon {
-        width: 80px;
-        height: 80px;
-        font-size: 40px;
-    }
-
+    .mode-container { max-width: 600px; padding: 50px 40px; }
+    .mode-header-icon { width: 80px; height: 80px; font-size: 40px; }
     .mode-header h2 { font-size: 28px; }
     .mode-header p { font-size: 15px; }
-
     .mode-cards { gap: 20px; }
-
-    .mode-card {
-        padding: 24px;
-        border-radius: 18px;
-    }
-
-    .mode-icon {
-        width: 60px;
-        height: 60px;
-        font-size: 28px;
-        margin-right: 20px;
-    }
-
+    .mode-card { padding: 24px; border-radius: 18px; }
+    .mode-icon { width: 60px; height: 60px; font-size: 28px; margin-right: 20px; }
     .mode-info h3 { font-size: 19px; }
     .mode-info p { font-size: 14px; }
-
     .timer-input { padding: 16px 18px; font-size: 16px; }
     .start-btn { padding: 18px; font-size: 17px; }
 }
-
-/* Ultra-wide Desktop */
 @media (min-width: 1440px) {
-    #quizContainer {
-        grid-template-columns: 1fr 380px;
-    }
-
+    #quizContainer { grid-template-columns: 1fr 380px; }
     .question-section { padding: 40px 60px; }
     .question-card { max-width: 1000px; padding: 40px; }
     .question-nav-panel { padding: 32px; }
@@ -1106,21 +641,12 @@ _QUIZ_DESKTOP_CSS = """
 """
 
 
-async def render_quiz_html(quiz: dict, *, mode: str = "exam") -> tuple[bytes, str]:
-    """Build the full, self-contained interactive "Premium Quiz" CBT-style
-    HTML report -- ported verbatim (markup/CSS/JS) from the original
-    ``generate_quiz_html`` generator, adapted only so it *returns*
-    ``(html_bytes, filename)`` instead of writing a temp file and calling
-    ``bot.send_document`` itself (the caller in quiz_play.py owns that).
-
-    Per explicit product decision, each question's options are freshly
-    ``random.shuffle``-d at report-generation time (same as the original
-    generator) -- the option lettering in this downloaded report can
-    therefore differ from what was actually shown live during the quiz.
-    ``mode`` is accepted for signature compatibility; the generated page
-    itself always offers both Exam/Practice mode selection to the viewer,
-    matching the original generator's behaviour.
-    """
+async def render_quiz_html(
+    quiz: dict,
+    *,
+    mode: str = "exam",
+    ai_solutions: dict[int, str] | None = None,
+) -> tuple[bytes, str]:
     quiz_name = quiz.get("quiz_name") or "Untitled Quiz"
     questions = quiz.get("questions") or []
     n_questions = len(questions)
@@ -1128,25 +654,49 @@ async def render_quiz_html(quiz: dict, *, mode: str = "exam") -> tuple[bytes, st
     timer_per_q = int(quiz.get("timer", 60) or 60)
     total_time = timer_per_q * n_questions
 
-    # Build the per-question JS objects, shuffling each question's options
-    # fresh on every render (kept intentionally -- see docstring above).
     q_js_items = []
     for i, q in enumerate(questions):
         opts = list(q.get("options") or [])
-        correct_idx = int(q.get("correct_option_id", 0) or 0)
-        correct_opt = opts[correct_idx] if 0 <= correct_idx < len(opts) else (opts[0] if opts else "")
-        random.shuffle(opts)
-        try:
-            new_correct_index = opts.index(correct_opt)
-        except ValueError:
-            new_correct_index = 0
+        opts = [str(o) for o in opts if str(o).strip()]  # drop blank options
+        has_options = len(opts) > 0
+
+        if has_options:
+            opts = opts[:4]
+            try:
+                correct_idx = int(q.get("correct_option_id", 0) or 0)
+            except (TypeError, ValueError):
+                correct_idx = 0
+            if correct_idx < 0 or correct_idx >= len(opts):
+                correct_idx = -1  # unknown answer for this question
+        else:
+            opts = []
+            correct_idx = -1
+
         opts_json = json.dumps(opts, ensure_ascii=False)
+
+        manual_expl = (q.get("explanation") or "").strip()
+        if manual_expl.lower() in ("none", "null", "n/a", "-"):
+            manual_expl = ""
+        ai_text = (ai_solutions or {}).get(i, "").strip()
+
+        if ai_text and manual_expl:
+            final_expl = f"{manual_expl}\n\n---\n\n{ai_text}"
+            exp_label = "Solution"
+        elif ai_text:
+            final_expl = ai_text
+            exp_label = "Solution"
+        else:
+            final_expl = manual_expl
+            exp_label = "Explanation"
+
         q_js_items.append(
             f'{{id:{i},txt:"{_je(q.get("question", ""))}",'
             f'ref:"{_je(q.get("reply_text", ""))}",'
             f'opts:{opts_json},'
-            f'ci:{new_correct_index},'
-            f'exp:"{_je(q.get("explanation", "No explanation"))}"}}'
+            f'ci:{correct_idx},'
+            f'hasOpts:{1 if has_options else 0},'
+            f'exp:"{_je(final_expl)}",'
+            f'expLabel:"{exp_label}"}}'
         )
     questions_js = ",".join(q_js_items)
 
@@ -1159,7 +709,7 @@ async def render_quiz_html(quiz: dict, *, mode: str = "exam") -> tuple[bytes, st
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>{quiz_name_esc}</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1184,24 +734,25 @@ blockquote{{border-left:3px solid var(--primary);padding:4px 14px;margin:8px 0;o
 .option-text p{{margin:0;display:inline}}
 
 *{{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}}
-:root{{--primary:#667eea;--primary-dark:#5568d3;--secondary:#764ba2;--success:#48bb78;--danger:#f5576c;--warning:#fbbf24;--info:#4facfe;--bg-light:#f7fafc;--bg-white:#fff;--text-dark:#1a202c;--text-light:#718096;--border:#e2e8f0}}
-[data-theme="dark"]{{--bg-light:#1a202c;--bg-white:#2d3748;--text-dark:#f7fafc;--text-light:#cbd5e0;--border:#4a5568}}
-body{{font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);min-height:100vh;overflow:hidden;user-select:none;-webkit-user-select:none;transition:background .3s}}
+:root{{--primary:#4f46e5;--primary-dark:#4338ca;--secondary:#7c3aed;--success:#16a34a;--danger:#dc2626;--warning:#d97706;--info:#0ea5e9;--bg-light:#f4f6fb;--bg-white:#ffffff;--text-dark:#1c2333;--text-light:#5b6478;--border:#dde2ee}}
+[data-theme="dark"]{{--bg-light:#0f1320;--bg-white:#161b2c;--text-dark:#e7e9f5;--text-light:#9aa2bd;--border:#2a3149}}
+html,body{{height:100%;height:100dvh;overflow:hidden;position:fixed;width:100%;margin:0;padding:0}}
+body{{font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-light);user-select:none;-webkit-user-select:none;transition:background .3s}}
 .scrollable::-webkit-scrollbar{{width:6px}}
 .scrollable::-webkit-scrollbar-track{{background:transparent}}
 .scrollable::-webkit-scrollbar-thumb{{background:var(--primary);border-radius:10px}}
 .protected-content{{white-space:pre-wrap;word-wrap:break-word;word-break:break-word;line-height:1.6;user-select:none}}
-#modeSelection{{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto}}
+#modeSelection{{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto}}
 .mode-container{{background:#fff;border-radius:24px;padding:40px 30px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:ms .5s cubic-bezier(.34,1.56,.64,1)}}
 @keyframes ms{{from{{opacity:0;transform:translateY(40px) scale(.95)}}to{{opacity:1;transform:translateY(0) scale(1)}}}}
 .mode-header{{text-align:center;margin-bottom:32px}}
-.mode-header-icon{{width:70px;height:70px;margin:0 auto 16px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;color:#fff;box-shadow:0 8px 24px rgba(102,126,234,.3)}}
+.mode-header-icon{{width:70px;height:70px;margin:0 auto 16px;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;color:#fff;box-shadow:0 8px 24px rgba(79,70,229,.3)}}
 .mode-header h2{{font-size:24px;font-weight:700;color:#1a202c;margin-bottom:8px}}
 .mode-header p{{font-size:14px;color:#718096;font-weight:400}}
 .mode-cards{{display:grid;gap:16px;margin-bottom:24px}}
 .mode-card{{background:#f7fafc;border:2px solid #e2e8f0;border-radius:16px;padding:20px;cursor:pointer;transition:all .3s;position:relative}}
-.mode-card:hover{{transform:translateY(-3px);box-shadow:0 12px 28px rgba(102,126,234,.15);border-color:#cbd5e0}}
-.mode-card.selected{{border-color:#667eea;background:#fff;box-shadow:0 8px 24px rgba(102,126,234,.2);transform:translateY(-2px)}}
+.mode-card:hover{{transform:translateY(-3px);box-shadow:0 12px 28px rgba(79,70,229,.15);border-color:#cbd5e0}}
+.mode-card.selected{{border-color:#4f46e5;background:#fff;box-shadow:0 8px 24px rgba(79,70,229,.2);transform:translateY(-2px)}}
 .mode-card-header{{display:flex;align-items:center}}
 .mode-icon{{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-right:16px;flex-shrink:0}}
 .exam-mode .mode-icon{{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff}}
@@ -1210,83 +761,94 @@ body{{font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;backgrou
 .mode-info p{{font-size:13px;color:#718096;line-height:1.4}}
 .timer-config{{margin-bottom:24px}}
 .timer-config label{{display:block;font-size:14px;font-weight:600;color:#1a202c;margin-bottom:10px}}
-.timer-config label i{{margin-right:6px;color:#667eea}}
+.timer-config label i{{margin-right:6px;color:#4f46e5}}
 .timer-input{{width:100%;padding:14px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:15px;font-weight:500;transition:all .3s;background:#fff;font-family:'Poppins',sans-serif;color:#1a202c}}
 .timer-input::placeholder{{color:#a0aec0}}
-.timer-input:focus{{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.1)}}
-.start-btn{{width:100%;padding:16px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 20px rgba(102,126,234,.35)}}
-.start-btn:hover:not(:disabled){{transform:translateY(-2px);box-shadow:0 12px 28px rgba(102,126,234,.45)}}
+.timer-input:focus{{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}}
+.start-btn{{width:100%;padding:16px;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 20px rgba(79,70,229,.35)}}
+.start-btn:hover:not(:disabled){{transform:translateY(-2px);box-shadow:0 12px 28px rgba(79,70,229,.45)}}
 .start-btn:active:not(:disabled){{transform:translateY(0)}}
 .start-btn:disabled{{opacity:.5;cursor:not-allowed;background:#cbd5e0;box-shadow:none}}
-#quizContainer{{display:none;position:fixed;top:0;left:0;width:100%;height:100vh;background:var(--bg-light);overflow:hidden}}
-.quiz-header{{position:fixed;top:0;left:0;right:0;background:var(--bg-white);box-shadow:0 2px 15px rgba(0,0,0,.08);z-index:100;padding:16px 20px}}
-.header-top{{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px}}
-.quiz-title{{font-size:15px;font-weight:700;color:var(--text-dark);display:flex;align-items:center;gap:8px;flex:1;min-width:0}}
-.quiz-title-text{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}}
-.mode-badge{{font-size:10px;padding:4px 10px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}}
+#quizContainer{{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg-light);overflow:hidden}}
+
+/* ========== COMPACT HEADER (MOBILE-FIRST) ========== */
+.quiz-header{{position:fixed;top:0;left:0;right:0;background:var(--bg-white);box-shadow:0 2px 12px rgba(0,0,0,.06);z-index:100;padding:8px 12px 10px;padding-top:calc(8px + env(safe-area-inset-top))}}
+.header-top{{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}}
+.quiz-title{{font-size:13px;font-weight:700;color:var(--text-dark);display:flex;align-items:center;gap:6px;flex:1;min-width:0}}
+.quiz-title-text{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px}}
+.mode-badge{{font-size:9px;padding:3px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}}
 .mode-badge.exam{{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:#fff}}
 .mode-badge.practice{{background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);color:#fff}}
-.header-actions{{display:flex;gap:8px;align-items:center}}
-.theme-toggle{{width:36px;height:36px;background:var(--bg-light);border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text-dark);transition:all .3s}}
+.mode-badge.review{{background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);color:#fff}}
+.header-actions{{display:flex;gap:6px;align-items:center}}
+.theme-toggle{{width:32px;height:32px;background:var(--bg-light);border:none;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-dark);transition:all .3s}}
 .theme-toggle:hover{{transform:scale(1.1)}}
-.timer-display{{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:var(--primary);padding:8px 14px;background:linear-gradient(135deg,rgba(102,126,234,.15) 0%,rgba(118,75,162,.15) 100%);border-radius:12px;white-space:nowrap}}
-.timer-display.warning{{color:var(--danger);background:linear-gradient(135deg,rgba(245,87,108,.15) 0%,rgba(240,147,251,.15) 100%);animation:pulse 1s infinite}}
+.timer-display{{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--primary);padding:6px 10px;background:linear-gradient(135deg,rgba(79,70,229,.15) 0%,rgba(124,58,237,.15) 100%);border-radius:10px;white-space:nowrap}}
+.timer-display.warning{{color:var(--danger);background:linear-gradient(135deg,rgba(220,38,38,.15) 0%,rgba(240,147,251,.15) 100%);animation:pulse 1s infinite}}
 @keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.7}}}}
-.header-progress{{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-light);margin-bottom:8px}}
-.progress-bar-container{{height:6px;background:var(--border);border-radius:10px;overflow:hidden}}
+.header-progress{{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-light);margin-bottom:6px}}
+.progress-bar-container{{height:4px;background:var(--border);border-radius:10px;overflow:hidden}}
 .progress-bar{{height:100%;background:linear-gradient(90deg,var(--primary) 0%,var(--secondary) 100%);transition:width .3s;border-radius:10px}}
-.question-section{{position:fixed;top:140px;left:0;right:0;bottom:80px;overflow-y:auto;overflow-x:hidden;padding:20px;-webkit-overflow-scrolling:touch}}
+
+/* ========== QUESTION AREA ========== */
+.question-section{{position:fixed;top:96px;left:0;right:0;bottom:68px;overflow-y:auto;overflow-x:hidden;padding:10px 12px 16px;-webkit-overflow-scrolling:touch}}
 .question-section.scrollable{{scrollbar-width:thin;scrollbar-color:var(--primary) transparent}}
-.question-card{{background:var(--bg-white);border-radius:20px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);max-width:800px;margin:0 auto}}
-.question-number{{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--primary);background:linear-gradient(135deg,rgba(102,126,234,.15) 0%,rgba(118,75,162,.15) 100%);padding:6px 14px;border-radius:20px;margin-bottom:16px}}
-.question-reference{{background:linear-gradient(135deg,rgba(79,172,254,.15) 0%,rgba(0,242,254,.15) 100%);border-left:4px solid var(--info);padding:14px 16px;border-radius:10px;margin-bottom:16px;font-size:14px;color:var(--text-dark);line-height:1.6;white-space:pre-wrap;word-wrap:break-word}}
-.question-text{{font-size:16px;font-weight:600;color:var(--text-dark);line-height:1.7;margin-bottom:20px;white-space:pre-wrap;word-wrap:break-word;word-break:break-word}}
-.options-container{{display:grid;gap:12px}}
-.option-btn{{width:100%;padding:16px 18px;background:var(--bg-light);border:3px solid var(--border);border-radius:14px;text-align:left;font-size:15px;color:var(--text-dark);cursor:pointer;transition:all .3s;display:flex;align-items:flex-start;gap:12px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;word-break:break-word;user-select:none}}
+.question-counter-pill{{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--primary);background:linear-gradient(135deg,rgba(79,70,229,.15) 0%,rgba(124,58,237,.15) 100%);padding:5px 12px;border-radius:20px;margin:0 0 8px 4px}}
+.question-card{{background:var(--bg-white);border-radius:16px;padding:14px 14px 16px;box-shadow:0 4px 16px rgba(0,0,0,.05);max-width:800px;margin:0 auto}}
+.question-reference{{background:linear-gradient(135deg,rgba(14,165,233,.15) 0%,rgba(0,242,254,.15) 100%);border-left:4px solid var(--info);padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:13px;color:var(--text-dark);line-height:1.55;white-space:pre-wrap;word-wrap:break-word}}
+.question-text{{font-size:15px;font-weight:600;color:var(--text-dark);line-height:1.55;margin-bottom:14px;white-space:pre-wrap;word-wrap:break-word;word-break:break-word}}
+.options-container{{display:grid;gap:8px}}
+.option-btn{{width:100%;padding:11px 13px;background:var(--bg-light);border:2px solid var(--border);border-radius:11px;text-align:left;font-size:14px;color:var(--text-dark);cursor:pointer;transition:all .25s;display:flex;align-items:flex-start;gap:10px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word;word-break:break-word;user-select:none}}
 .option-btn:active{{transform:scale(.98)}}
-.option-indicator{{min-width:28px;height:28px;border-radius:50%;background:var(--bg-white);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;transition:all .3s}}
-.option-text{{flex:1;padding-top:3px}}
-.option-btn:hover:not(.disabled){{border-color:var(--primary);transform:translateX(4px)}}
-.option-btn.selected{{background:linear-gradient(135deg,rgba(102,126,234,.15) 0%,rgba(118,75,162,.15) 100%);border-color:var(--primary)}}
+.option-indicator{{min-width:26px;height:26px;border-radius:50%;background:var(--bg-white);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;transition:all .3s;flex-shrink:0}}
+.option-text{{flex:1;padding-top:2px}}
+.option-btn:hover:not(.disabled){{border-color:var(--primary);transform:translateX(3px)}}
+.option-btn.selected{{background:linear-gradient(135deg,rgba(79,70,229,.15) 0%,rgba(124,58,237,.15) 100%);border-color:var(--primary)}}
 .option-btn.selected .option-indicator{{background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);color:#fff;border-color:transparent}}
-.option-btn.correct{{background:linear-gradient(135deg,rgba(72,187,120,.15) 0%,rgba(72,187,120,.15) 100%);border-color:var(--success)}}
+.option-btn.correct{{background:linear-gradient(135deg,rgba(22,163,74,.15) 0%,rgba(22,163,74,.15) 100%);border-color:var(--success)}}
 .option-btn.correct .option-indicator{{background:var(--success);color:#fff;border-color:transparent}}
-.option-btn.incorrect{{background:linear-gradient(135deg,rgba(245,87,108,.15) 0%,rgba(245,87,108,.15) 100%);border-color:var(--danger)}}
+.option-btn.incorrect{{background:linear-gradient(135deg,rgba(220,38,38,.15) 0%,rgba(220,38,38,.15) 100%);border-color:var(--danger)}}
 .option-btn.incorrect .option-indicator{{background:var(--danger);color:#fff;border-color:transparent}}
-.option-btn.disabled{{pointer-events:none;opacity:.6}}
-.explanation-box{{display:none;background:linear-gradient(135deg,rgba(254,245,231,.5) 0%,rgba(251,191,36,.2) 100%);border-left:4px solid var(--warning);border-radius:12px;padding:16px;margin-top:20px;animation:sd .3s ease-out}}
-@keyframes sd{{from{{opacity:0;max-height:0;padding:0}}to{{opacity:1;max-height:500px;padding:16px}}}}
-.explanation-header{{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#92400e;margin-bottom:10px}}
-.explanation-text{{font-size:14px;color:#78350f;line-height:1.6;white-space:pre-wrap;word-wrap:break-word}}
+.option-btn.disabled{{pointer-events:none;opacity:.7}}
+.explanation-box{{display:none;background:linear-gradient(135deg,rgba(254,245,231,.5) 0%,rgba(251,191,36,.2) 100%);border-left:4px solid var(--warning);border-radius:10px;padding:12px;margin-top:14px;animation:sd .3s ease-out}}
+@keyframes sd{{from{{opacity:0;max-height:0;padding:0}}to{{opacity:1;max-height:500px;padding:12px}}}}
+.explanation-header{{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px}}
+.explanation-text{{font-size:13px;color:#78350f;line-height:1.55;white-space:pre-wrap;word-wrap:break-word}}
 [data-theme="dark"] .explanation-text{{color:#fbbf24}}
-.nav-controls{{position:fixed;bottom:0;left:0;right:0;background:var(--bg-white);padding:16px 20px;box-shadow:0 -2px 15px rgba(0,0,0,.08);display:flex;gap:12px;z-index:90}}
-.nav-btn{{flex:1;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px}}
+
+/* ========== FOOTER NAV ========== */
+.nav-controls{{position:fixed;bottom:0;left:0;right:0;background:var(--bg-white);padding:8px 10px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(0,0,0,.08);display:flex;gap:8px;z-index:90}}
+.nav-btn{{flex:1;padding:11px 8px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}}
 .nav-btn.primary{{background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);color:#fff}}
 .nav-btn.secondary{{background:var(--bg-light);color:var(--text-dark);border:2px solid var(--border)}}
 .nav-btn:active{{transform:scale(.96)}}
 .nav-btn:disabled{{opacity:.5;cursor:not-allowed;transform:none}}
-.question-nav-toggle{{position:fixed;bottom:100px;right:20px;width:56px;height:56px;background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);color:#fff;border:none;border-radius:50%;font-size:22px;cursor:pointer;box-shadow:0 8px 20px rgba(102,126,234,.4);z-index:85;transition:all .3s}}
+
+.question-nav-toggle{{position:fixed;bottom:78px;right:14px;width:46px;height:46px;background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);color:#fff;border:none;border-radius:50%;font-size:17px;cursor:pointer;box-shadow:0 8px 20px rgba(79,70,229,.4);z-index:85;transition:all .3s}}
 .question-nav-toggle:active{{transform:scale(.95)}}
-.question-nav-panel{{position:fixed;bottom:0;left:0;right:0;background:var(--bg-white);border-radius:24px 24px 0 0;box-shadow:0 -4px 30px rgba(0,0,0,.15);z-index:95;max-height:70vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s;padding:20px}}
+.question-nav-panel{{position:fixed;bottom:0;left:0;right:0;background:var(--bg-white);border-radius:24px 24px 0 0;box-shadow:0 -4px 30px rgba(0,0,0,.15);z-index:95;max-height:70vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom))}}
 .question-nav-panel.open{{transform:translateY(0)}}
 .nav-panel-header{{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--border)}}
 .nav-panel-title{{font-size:18px;font-weight:700;color:var(--text-dark)}}
 .nav-close-btn{{width:32px;height:32px;background:var(--bg-light);border:none;border-radius:50%;font-size:16px;cursor:pointer;color:var(--text-light)}}
-.nav-legend{{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;font-size:12px;color:var(--text-dark)}}
-.legend-item{{display:flex;align-items:center;gap:6px;color:var(--text-dark)}}
-.legend-box{{width:20px;height:20px;border-radius:6px}}
-.legend-box.answered{{background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%)}}
-.legend-box.marked{{background:linear-gradient(135deg,var(--warning) 0%,#f59e0b 100%)}}
-.legend-box.unanswered{{background:var(--border)}}
+.nav-stats-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}}
+.stat-box{{padding:12px 8px;border-radius:12px;text-align:center;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.1)}}
+.stat-box.answered-box{{background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%)}}
+.stat-box.marked-box{{background:linear-gradient(135deg,var(--warning) 0%,#f59e0b 100%)}}
+.stat-box.unanswered-box{{background:var(--border);color:var(--text-dark)}}
+.stat-num{{font-size:20px;font-weight:800;line-height:1.2}}
+.stat-label{{font-size:10px;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;opacity:0.9;margin-top:2px}}
+
 .question-grid{{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}}
 .question-nav-item{{aspect-ratio:1;border:2px solid var(--border);border-radius:10px;background:var(--bg-white);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s;color:var(--text-light)}}
 .question-nav-item:active{{transform:scale(.95)}}
-.question-nav-item.current{{border-color:var(--primary);background:linear-gradient(135deg,rgba(102,126,234,.15) 0%,rgba(118,75,162,.15) 100%);color:var(--primary)}}
+.question-nav-item.current{{border-color:var(--primary);background:linear-gradient(135deg,rgba(79,70,229,.15) 0%,rgba(124,58,237,.15) 100%);color:var(--primary)}}
 .question-nav-item.answered{{background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);color:#fff;border-color:transparent}}
 .question-nav-item.marked{{background:linear-gradient(135deg,var(--warning) 0%,#f59e0b 100%);color:#fff;border-color:transparent}}
 .question-nav-item.correct{{background:linear-gradient(135deg,var(--success) 0%,#38a169 100%);color:#fff;border-color:transparent}}
 .question-nav-item.incorrect{{background:linear-gradient(135deg,var(--danger) 0%,#e53e3e 100%);color:#fff;border-color:transparent}}
-#resultsContainer{{display:none;position:fixed;top:0;left:0;width:100%;height:100vh;background:var(--bg-light);overflow-y:auto;overflow-x:hidden;padding:20px;z-index:1000}}
+
+#resultsContainer{{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg-light);overflow-y:auto;overflow-x:hidden;padding:20px;z-index:1000}}
 #resultsContainer.scrollable{{scrollbar-width:thin;scrollbar-color:var(--primary) transparent}}
 .results-header{{text-align:center;padding:40px 20px;background:var(--bg-white);border-radius:20px;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.06)}}
 .results-icon{{font-size:80px;margin-bottom:20px}}
@@ -1307,6 +869,30 @@ body{{font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;backgrou
 .action-btn.primary{{background:linear-gradient(135deg,var(--primary) 0%,var(--secondary) 100%);color:#fff}}
 .action-btn.secondary{{background:var(--bg-white);color:var(--text-dark);border:2px solid var(--border)}}
 .action-btn:hover{{transform:translateY(-2px)}}
+
+/* ========== LANDSCAPE MOBILE OPTIMIZATION ========== */
+@media (orientation: landscape) and (max-height: 500px) {{
+  .quiz-header{{padding:4px 12px 6px;padding-top:calc(4px + env(safe-area-inset-top))}}
+  .header-progress{{display:none}}
+  .question-section{{top:56px;bottom:60px;padding:4px 8px}}
+  .question-card{{padding:10px;margin:0}}
+  .options-container{{grid-template-columns:1fr 1fr;gap:8px}}
+  .option-btn{{padding:8px 10px;font-size:13px}}
+  .nav-controls{{padding:4px 8px calc(4px + env(safe-area-inset-bottom))}}
+  .question-nav-toggle{{bottom:64px;width:36px;height:36px;font-size:14px}}
+  .question-counter-pill{{display:none}}
+  .nav-btn{{padding:8px 4px;font-size:12px}}
+}}
+
+/* ========== VERY SMALL PHONES ========== */
+@media (max-width:380px){{
+  .question-text{{font-size:14.5px}}
+  .option-btn{{padding:10px 11px;font-size:13.5px}}
+  .nav-btn{{font-size:12px;padding:10px 6px}}
+  .quiz-title-text{{max-width:80px}}
+  .question-counter-pill{{font-size:11px;padding:4px 10px}}
+}}
+
 {_QUIZ_DESKTOP_CSS}
 </style>
 </head>
@@ -1354,6 +940,9 @@ body{{font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;backgrou
 <span class="mode-badge" id="mb"></span>
 </div>
 <div class="header-actions">
+<button class="theme-toggle" id="startBtn" title="Resume Quiz" style="color: #16a34a; display: none;"><i class="fas fa-play-circle"></i></button>
+<button class="theme-toggle" id="stopBtn" title="Stop Quiz" style="color: #dc2626;"><i class="fas fa-stop-circle"></i></button>
+<button class="theme-toggle" id="fs" title="Full Screen"><i class="fas fa-expand"></i></button>
 <button class="theme-toggle" id="tt" title="Toggle Dark Mode"><i class="fas fa-moon"></i></button>
 <div class="timer-display" id="td"><i class="fas fa-clock"></i><span id="tt2">00:00</span></div>
 </div>
@@ -1367,6 +956,7 @@ body{{font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;backgrou
 <div class="question-section scrollable" id="qs"></div>
 <div class="nav-controls">
 <button class="nav-btn secondary" id="pv"><i class="fas fa-chevron-left"></i>Previous</button>
+<button class="nav-btn secondary" id="cr"><i class="fas fa-times-circle"></i>Clear</button>
 <button class="nav-btn secondary" id="mk"><i class="fas fa-bookmark"></i>Mark</button>
 <button class="nav-btn primary" id="nx">Next<i class="fas fa-chevron-right"></i></button>
 <button class="nav-btn primary" id="sm" style="display:none"><i class="fas fa-paper-plane"></i>Submit</button>
@@ -1377,7 +967,21 @@ body{{font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;backgrou
 <h3 class="nav-panel-title"><i class="fas fa-map-marked-alt"></i> Question Navigator</h3>
 <button class="nav-close-btn" id="nc"><i class="fas fa-times"></i></button>
 </div>
-<div class="nav-legend">
+<div class="nav-stats-grid">
+    <div class="stat-box answered-box">
+        <div class="stat-num" id="stat-answered">0</div>
+        <div class="stat-label">Answered</div>
+    </div>
+    <div class="stat-box marked-box">
+        <div class="stat-num" id="stat-marked">0</div>
+        <div class="stat-label">Marked</div>
+    </div>
+    <div class="stat-box unanswered-box">
+        <div class="stat-num" id="stat-unanswered">0</div>
+        <div class="stat-label">Not Answered</div>
+    </div>
+</div>
+<div class="nav-legend" style="display:none;">
 <div class="legend-item"><div class="legend-box answered"></div><span>Answered</span></div>
 <div class="legend-item"><div class="legend-box marked"></div><span>Marked</span></div>
 <div class="legend-item"><div class="legend-box unanswered"></div><span>Not Answered</span></div>
@@ -1405,11 +1009,12 @@ body{{font-family:'Poppins',-apple-system,BlinkMacSystemFont,sans-serif;backgrou
 </div>
 <script>
 const qd={{q:[{questions_js}],m:null,tt:{total_time},nm:{negative_marks}}},
-st={{cq:0,a:Array(qd.q.length).fill(null),mk:Array(qd.q.length).fill(false),tr:qd.tt,ti:null,sb:false,rv:false,th:'light'}};
+st={{cq:0,a:Array(qd.q.length).fill(null),mk:Array(qd.q.length).fill(false),tr:qd.tt,ti:null,sb:false,rv:false,th:'light',locked:false,running:false}};
 if(window.marked){{marked.setOptions({{gfm:true,breaks:true}})}}
 function renderContent(text,inline){{
     if(text===undefined||text===null||text==='')return '';
     let t=String(text);
+    t=t.replace(/^(\\d+)\\./gm, '$1&#46;');
     const store=[];
     const stash=(expr,display)=>{{store.push({{expr:expr.trim(),display}});return '@@MATHPH'+(store.length-1)+'@@'}};
     t=t.replace(/\\$\\$([\\s\\S]+?)\\$\\$/g,(m,e,off,str)=>{{
@@ -1443,24 +1048,166 @@ function tgt(){{st.th=st.th==='light'?'dark':'light';document.documentElement.se
 function uti(){{const i=document.querySelector('#tt i');if(i)i.className=st.th==='light'?'fas fa-moon':'fas fa-sun'}}
 function pcc(){{document.addEventListener('contextmenu',e=>e.preventDefault());document.addEventListener('copy',e=>e.preventDefault());document.addEventListener('cut',e=>e.preventDefault());document.addEventListener('selectstart',e=>{{if(!e.target.tagName.match(/INPUT|TEXTAREA/i))e.preventDefault()}})}}
 function sms(){{const mc=document.querySelectorAll('.mode-card'),sb=document.getElementById('sb');mc.forEach(c=>{{c.addEventListener('click',()=>{{mc.forEach(x=>x.classList.remove('selected'));c.classList.add('selected');qd.m=c.dataset.mode;sb.disabled=false}})}});sb.addEventListener('click',sq)}}
-function sq(){{const ct=document.getElementById('ct'),ctv=parseInt(ct.value);if(ctv&&ctv>0){{st.tr=ctv*60;qd.tt=ctv*60}}document.body.style.overflow='hidden';document.getElementById('modeSelection').style.display='none';document.getElementById('quizContainer').style.display='block';document.getElementById('mb').textContent=qd.m;document.getElementById('mb').className='mode-badge '+qd.m;iq()}}
+function sq(){{
+    const ct=document.getElementById('ct'),ctv=parseInt(ct.value);
+    if(ctv&&ctv>0){{st.tr=ctv*60;qd.tt=ctv*60}}
+    document.body.style.overflow='hidden';
+    document.getElementById('modeSelection').style.display='none';
+    document.getElementById('quizContainer').style.display='block';
+    document.getElementById('mb').textContent=qd.m;
+    document.getElementById('mb').className='mode-badge '+qd.m;
+    st.running = true;
+    st.locked = true;
+    history.pushState(null, null, location.href);
+    window.addEventListener('popstate', function(e) {{
+        if (st.locked) {{
+            history.pushState(null, null, location.href);
+            alert('You cannot go back while the timer is running. Please click the red Stop button to exit.');
+        }}
+    }});
+    window.addEventListener('beforeunload', function (e) {{
+        if (st.locked) {{
+            e.preventDefault();
+            e.returnValue = '';
+        }}
+    }});
+    iq();
+}}
 function iq(){{rq(0);rqg();stt();sn()}}
-function stt(){{utd();st.ti=setInterval(()=>{{st.tr--;utd();if(st.tr<=0){{clearInterval(st.ti);sbq()}}if(st.tr<=60)document.getElementById('td').classList.add('warning')}},1000)}}
+function stt(){{
+    clearInterval(st.ti);
+    utd();
+    st.ti=setInterval(()=>{{
+        st.tr--;
+        utd();
+        if(st.tr<=0){{
+            clearInterval(st.ti);
+            sbq()
+        }}
+        if(st.tr<=60)document.getElementById('td').classList.add('warning')
+    }},1000)
+}}
 function utd(){{const m=Math.floor(st.tr/60),s=st.tr%60;document.getElementById('tt2').textContent=`${{String(m).padStart(2,'0')}}:${{String(s).padStart(2,'0')}}`}}
-function rq(i){{st.cq=i;const q=qd.q[i],qs=document.getElementById('qs');let h=`<div class="question-card"><div class="question-number"><i class="fas fa-question-circle"></i>Question ${{i+1}} of ${{qd.q.length}}</div>`;if(q.ref)h+=`<div class="question-reference protected-content"><i class="fas fa-info-circle"></i> ${{renderContent(q.ref,true)}}</div>`;h+=`<div class="question-text protected-content">${{renderContent(q.txt)}}</div><div class="options-container">`;q.opts.forEach((o,x)=>{{let bc='option-btn',ic=String.fromCharCode(65+x);const isSel=st.a[i]===x,isCor=x===q.ci,shAns=(qd.m==='practice'&&st.a[i]!==null)||st.sb;if(isSel)bc+=' selected';if(shAns){{bc+=' disabled';if(isCor){{bc+=' correct';ic='<i class="fas fa-check"></i>'}}else if(isSel&&!isCor){{bc+=' incorrect';ic='<i class="fas fa-times"></i>'}}}}h+=`<button class="${{bc}}" data-index="${{x}}" onclick="so(${{x}})"><div class="option-indicator">${{ic}}</div><div class="option-text protected-content">${{renderContent(o,true)}}</div></button>`}});h+=`</div>`;const shExp=(qd.m==='practice'&&st.a[i]!==null)||st.sb;if(shExp)h+=`<div class="explanation-box" style="display:block"><div class="explanation-header"><i class="fas fa-lightbulb"></i>Explanation</div><div class="explanation-text protected-content">${{renderContent(q.exp)}}</div></div>`;h+=`</div>`;qs.innerHTML=h;qs.scrollTop=0;up();unb();uqg()}}
+function rq(i){{
+    st.cq=i;
+    const q=qd.q[i],qs=document.getElementById('qs');
+    let h=`<div class="question-counter-pill"><i class="fas fa-question-circle"></i>Question ${{i+1}} of ${{qd.q.length}}</div>`;
+    h+=`<div class="question-card">`;
+    if(q.ref)h+=`<div class="question-reference protected-content"><i class="fas fa-info-circle"></i> ${{renderContent(q.ref,true)}}</div>`;
+    h+=`<div class="question-text protected-content">${{renderContent(q.txt)}}</div>`;
+    if(q.hasOpts){{
+        h+=`<div class="options-container">`;
+        q.opts.forEach((o,x)=>{{
+            let bc='option-btn',ic=String.fromCharCode(65+x);
+            const isSel=st.a[i]===x,isCor=(x===q.ci&&q.ci>=0),shAns=(qd.m==='practice'&&st.a[i]!==null)||st.sb;
+            if(isSel)bc+=' selected';
+            if(shAns&&q.ci>=0){{
+                bc+=' disabled';
+                if(isCor){{bc+=' correct';ic='<i class="fas fa-check"></i>'}}
+                else if(isSel){{bc+=' incorrect';ic='<i class="fas fa-times"></i>'}}
+            }}
+            h+=`<button class="${{bc}}" data-index="${{x}}" onclick="so(${{x}})"><div class="option-indicator">${{ic}}</div><div class="option-text protected-content">${{renderContent(o,true)}}</div></button>`
+        }});
+        h+=`</div>`;
+    }}
+    const shExp=(qd.m==='practice'&&st.a[i]!==null)||st.sb;
+    if(shExp&&q.exp)h+=`<div class="explanation-box" style="display:block"><div class="explanation-header"><i class="fas fa-lightbulb"></i>${{q.expLabel || 'Explanation'}}</div><div class="explanation-text protected-content">${{renderContent(q.exp)}}</div></div>`;
+    h+=`</div>`;
+    qs.innerHTML=h;
+    qs.scrollTop=0;
+    up();unb();uqg()
+}}
 function so(oi){{if(st.sb)return;if(st.a[st.cq]===oi){{st.a[st.cq]=null}}else{{st.a[st.cq]=oi}}rq(st.cq)}}
-function sn(){{document.getElementById('pv').addEventListener('click',np);document.getElementById('nx').addEventListener('click',nn);document.getElementById('mk').addEventListener('click',tm);document.getElementById('sm').addEventListener('click',cs);document.getElementById('nt').addEventListener('click',tnp);document.getElementById('nc').addEventListener('click',tnp);document.getElementById('rb').addEventListener('click',ra);document.getElementById('rsb').addEventListener('click',rs);document.getElementById('tt').addEventListener('click',tgt);document.addEventListener('keydown',e=>{{if(st.sb)return;if(e.key==='ArrowLeft')np();if(e.key==='ArrowRight')nn()}})}}
-function np(){{if(st.cq>0)rq(st.cq-1)}}
-function nn(){{if(st.cq<qd.q.length-1)rq(st.cq+1)}}
-function tm(){{st.mk[st.cq]=!st.mk[st.cq];uqg();const mb=document.getElementById('mk');mb.innerHTML=st.mk[st.cq]?'<i class="fas fa-bookmark"></i> Unmark':'<i class="fas fa-bookmark"></i> Mark'}}
-function unb(){{document.getElementById('pv').disabled=st.cq===0;if(st.cq===qd.q.length-1){{document.getElementById('nx').style.display='none';document.getElementById('sm').style.display='flex'}}else{{document.getElementById('nx').style.display='flex';document.getElementById('sm').style.display='none'}}const mb=document.getElementById('mk');mb.innerHTML=st.mk[st.cq]?'<i class="fas fa-bookmark"></i> Unmark':'<i class="fas fa-bookmark"></i> Mark'}}
+function cr(){{if(st.sb)return;st.a[st.cq]=null;rq(st.cq)}}
+function sn(){{
+    document.getElementById('pv').addEventListener('click',np);
+    document.getElementById('nx').addEventListener('click',nn);
+    document.getElementById('cr').addEventListener('click',cr);
+    document.getElementById('mk').addEventListener('click',tm);
+    document.getElementById('sm').addEventListener('click',cs);
+    document.getElementById('nt').addEventListener('click',tnp);
+    document.getElementById('nc').addEventListener('click',tnp);
+    document.getElementById('rb').addEventListener('click',ra);
+    document.getElementById('rsb').addEventListener('click',rs);
+    document.getElementById('tt').addEventListener('click',tgt);
+    document.getElementById('fs').addEventListener('click',toggleFullScreen);
+    document.getElementById('stopBtn').addEventListener('click', function() {{
+        st.running = false;
+        st.locked = false;
+        clearInterval(st.ti);
+        document.getElementById('pv').disabled = true;
+        document.getElementById('nx').disabled = true;
+        document.getElementById('sm').disabled = true;
+        document.getElementById('nt').style.display = 'none';
+        document.getElementById('np').classList.remove('open');
+        document.getElementById('stopBtn').style.display = 'none';
+        document.getElementById('startBtn').style.display = 'flex';
+    }});
+    document.getElementById('startBtn').addEventListener('click', function() {{
+        st.running = true;
+        st.locked = true;
+        document.getElementById('pv').disabled = (st.cq === 0);
+        document.getElementById('nx').disabled = false;
+        document.getElementById('sm').disabled = false;
+        document.getElementById('nt').style.display = '';
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'flex';
+        stt();
+    }});
+    document.addEventListener('keydown',e=>{{if(!st.running && !st.rv)return;if(e.key==='ArrowLeft')np();if(e.key==='ArrowRight')nn()}})
+}}
+function toggleFullScreen() {{
+  if (!document.fullscreenElement) {{
+      document.documentElement.requestFullscreen().catch(err => {{
+          console.log(`Error attempting to enable fullscreen: ${{err.message}}`);
+      }});
+  }} else {{
+      if (document.exitFullscreen) {{
+          document.exitFullscreen();
+      }}
+  }}
+}}
+function np(){{if(!st.running && !st.rv)return;if(st.cq>0)rq(st.cq-1)}}
+function nn(){{if(!st.running && !st.rv)return;if(st.cq<qd.q.length-1)rq(st.cq+1)}}
+function tm(){{if(st.sb)return;st.mk[st.cq]=!st.mk[st.cq];uqg();const mb=document.getElementById('mk');mb.innerHTML=st.mk[st.cq]?'<i class="fas fa-bookmark"></i> Unmark':'<i class="fas fa-bookmark"></i> Mark'}}
+function unb(){{
+    const pv = document.getElementById('pv');
+    const nx = document.getElementById('nx');
+    const sm = document.getElementById('sm');
+    const mk = document.getElementById('mk');
+    const cr = document.getElementById('cr');
+    pv.disabled = st.cq === 0;
+    if (st.rv) {{
+        sm.style.display = 'none';
+        nx.style.display = 'flex';
+        nx.innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
+        nx.disabled = st.cq === qd.q.length - 1;
+        mk.style.display = 'none';
+        cr.style.display = 'none';
+    }} else {{
+        mk.style.display = 'flex';
+        cr.style.display = 'flex';
+        if (st.cq === qd.q.length - 1) {{
+            nx.style.display = 'none';
+            sm.style.display = 'flex';
+        }} else {{
+            nx.style.display = 'flex';
+            sm.style.display = 'none';
+            nx.disabled = false;
+        }}
+    }}
+    mk.innerHTML = st.mk[st.cq] ? '<i class="fas fa-bookmark"></i> Unmark' : '<i class="fas fa-bookmark"></i> Mark';
+}}
 function up(){{const at=st.a.filter(a=>a!==null).length,pr=((st.cq+1)/qd.q.length)*100;document.getElementById('pt').textContent=`Question ${{st.cq+1}} of ${{qd.q.length}}`;document.getElementById('at').textContent=`Attempted: ${{at}}/${{qd.q.length}}`;document.getElementById('pb').style.width=pr+'%'}}
-function rqg(){{const g=document.getElementById('qg');g.innerHTML='';qd.q.forEach((_,i)=>{{const it=document.createElement('div');it.className='question-nav-item';it.textContent=i+1;it.onclick=()=>{{rq(i);if(window.innerWidth<768)tnp()}};g.appendChild(it)}})}}
+function rqg(){{const g=document.getElementById('qg');g.innerHTML='';qd.q.forEach((_,i)=>{{const it=document.createElement('div');it.className='question-nav-item';it.textContent=i+1;it.onclick=()=>{{if(!st.running && !st.rv)return;rq(i);if(window.innerWidth<1024)tnp()}};g.appendChild(it)}})}}
 function uqg() {{
     const its = document.querySelectorAll('.question-nav-item');
+    let ansCount = 0, mkdCount = 0, unansCount = 0;
     its.forEach((it, i) => {{
         it.className = 'question-nav-item';
         if (i === st.cq) it.classList.add('current');
+        if (st.a[i] !== null) ansCount++; else unansCount++;
+        if (st.mk[i]) mkdCount++;
         if (st.sb) {{
             if (st.a[i] === qd.q[i].ci) it.classList.add('correct');
             else if (st.a[i] !== null) it.classList.add('incorrect');
@@ -1469,11 +1216,29 @@ function uqg() {{
             if (st.mk[i]) it.classList.add('marked');
         }}
     }});
+    const sa = document.getElementById('stat-answered');
+    const sm = document.getElementById('stat-marked');
+    const su = document.getElementById('stat-unanswered');
+    if(sa) sa.textContent = ansCount;
+    if(sm) sm.textContent = mkdCount;
+    if(su) su.textContent = unansCount;
 }}
 function tnp(){{document.getElementById('np').classList.toggle('open')}}
-function cs(){{const u=st.a.filter(a=>a===null).length;if(u>0){{const c=window.confirm(`You have ${{u}} unattempted question(s). Do you want to submit?`);if(!c)return}}sbq()}}
-function sbq(){{clearInterval(st.ti);st.sb=true;let c=0,ic=0,u=0,nm=0;st.a.forEach((a,i)=>{{if(a===null)u++;else if(a===qd.q[i].ci)c++;else{{ic++;nm+=qd.nm}}}});const ts=c-nm,pc=(ts/qd.q.length)*100;document.body.style.overflow='auto';document.getElementById('quizContainer').style.display='none';document.getElementById('resultsContainer').style.display='block';document.getElementById('resultsContainer').classList.add('scrollable');if(pc>=70){{document.getElementById('ri').innerHTML='<i class="fas fa-trophy" style="color:#fbbf24"></i>';document.getElementById('rt').textContent='Excellent Performance!'}}else if(pc>=50){{document.getElementById('ri').innerHTML='<i class="far fa-smile" style="color:#48bb78"></i>';document.getElementById('rt').textContent='Good Job!'}}else{{document.getElementById('ri').innerHTML='<i class="far fa-meh" style="color:#f5576c"></i>';document.getElementById('rt').textContent='Keep Practicing!'}}document.getElementById('rs').textContent=ts.toFixed(2)+' / '+qd.q.length;document.getElementById('rp').textContent=pc.toFixed(1)+'%';document.getElementById('cc').textContent=c;document.getElementById('ic').textContent=ic;document.getElementById('uc').textContent=u;document.getElementById('nm').textContent='-'+nm.toFixed(2)}}
-function ra(){{st.rv=true;document.body.style.overflow='hidden';document.getElementById('resultsContainer').style.display='none';document.getElementById('quizContainer').style.display='block';rq(0);uqg()}}
+function cs(){{if(st.sb)return;const u=st.a.filter(a=>a===null).length;if(u>0){{const c=window.confirm(`You have ${{u}} unattempted question(s). Do you want to submit?`);if(!c)return}}sbq()}}
+function sbq(){{clearInterval(st.ti);st.sb=true;st.running=false;st.locked=false;let c=0,ic=0,u=0,nm=0,scoreable=0;st.a.forEach((a,i)=>{{const qq=qd.q[i];if(!qq.hasOpts||qq.ci<0){{u++;return}}scoreable++;if(a===null)u++;else if(a===qq.ci)c++;else{{ic++;nm+=qd.nm}}}});const ts=c-nm,pc=scoreable>0?(ts/scoreable)*100:0;document.body.style.overflow='auto';document.getElementById('quizContainer').style.display='none';document.getElementById('resultsContainer').style.display='block';document.getElementById('resultsContainer').classList.add('scrollable');if(pc>=70){{document.getElementById('ri').innerHTML='<i class="fas fa-trophy" style="color:#fbbf24"></i>';document.getElementById('rt').textContent='Excellent Performance!'}}else if(pc>=50){{document.getElementById('ri').innerHTML='<i class="far fa-smile" style="color:#48bb78"></i>';document.getElementById('rt').textContent='Good Job!'}}else{{document.getElementById('ri').innerHTML='<i class="far fa-meh" style="color:#f5576c"></i>';document.getElementById('rt').textContent='Keep Practicing!'}}document.getElementById('rs').textContent=ts.toFixed(2)+' / '+scoreable;document.getElementById('rp').textContent=pc.toFixed(1)+'%';document.getElementById('cc').textContent=c;document.getElementById('ic').textContent=ic;document.getElementById('uc').textContent=u;document.getElementById('nm').textContent='-'+nm.toFixed(2)}}
+function ra(){{
+    st.rv=true;
+    document.body.style.overflow='hidden';
+    document.getElementById('resultsContainer').style.display='none';
+    document.getElementById('quizContainer').style.display='block';
+    document.getElementById('stopBtn').style.display = 'none';
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('td').style.display = 'none';
+    document.getElementById('mb').textContent = 'REVIEW';
+    document.getElementById('mb').className = 'mode-badge review';
+    rq(0);
+    uqg();
+}}
 function rs(){{document.body.style.overflow='hidden';location.reload()}}
 </script>
 </body>
@@ -1487,46 +1252,15 @@ function rs(){{document.body.style.overflow='hidden';location.reload()}}
 # --------------------------------------------------------------------------
 
 _ANALYSIS_CSS = """
-.hero {
-  padding: 34px clamp(16px, 5vw, 40px);
-  margin: 20px 0;
-  text-align: center;
-}
+.hero { padding: 34px clamp(16px, 5vw, 40px); margin: 20px 0; text-align: center; }
 .hero h1 { font-size: clamp(1.4rem, 4vw, 1.9rem); margin: 0 0 6px; font-weight: 800; }
 .hero p { color: var(--color-text-muted); margin: 0; }
-
 .section { margin: 28px 0; }
-.section-title {
-  font-size: 1.05rem;
-  font-weight: 800;
-  margin-bottom: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.section-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 .section-title i { color: var(--color-primary); }
-
-.podium {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  align-items: end;
-}
-.podium-slot {
-  padding: 20px 14px 18px;
-  text-align: center;
-  border-radius: var(--radius-md);
-  position: relative;
-}
-.podium-slot .rank-badge {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 10px;
-  font-weight: 800;
-  color: #fff;
-  font-size: 1.1rem;
-}
+.podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: end; }
+.podium-slot { padding: 20px 14px 18px; text-align: center; border-radius: var(--radius-md); position: relative; }
+.podium-slot .rank-badge { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-weight: 800; color: #fff; font-size: 1.1rem; }
 .podium-1 { order: 2; background: linear-gradient(180deg, #fff7e0, var(--color-surface)); border: 1.5px solid #f2c94c; }
 html[data-theme="dark"] .podium-1 { background: linear-gradient(180deg, #3a2f0c, var(--color-surface)); }
 .podium-1 .rank-badge { background: #f2b400; }
@@ -1537,65 +1271,28 @@ html[data-theme="dark"] .podium-1 { background: linear-gradient(180deg, #3a2f0c,
 .podium-name { font-weight: 700; font-size: 0.98rem; word-break: break-word; }
 .podium-score { font-size: 1.3rem; font-weight: 800; color: var(--color-primary); margin-top: 4px; }
 .podium-meta { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 2px; }
-
 @media (max-width: 640px) {
   .podium { grid-template-columns: 1fr; }
   .podium-1, .podium-2, .podium-3 { order: initial; margin-top: 0; }
 }
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
+.charts-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
 @media (min-width: 900px) { .charts-grid { grid-template-columns: 1.3fr 1fr; } }
 .chart-card { padding: 18px; }
 .chart-card canvas { max-width: 100%; }
-
-.table-wrap {
-  overflow-x: auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-}
-table.leaderboard {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 520px;
-  font-size: 0.92rem;
-}
-table.leaderboard thead th {
-  background: var(--color-surface-alt);
-  text-align: left;
-  padding: 12px 14px;
-  font-weight: 700;
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-  position: sticky;
-  top: 0;
-}
+.table-wrap { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--color-border); }
+table.leaderboard { width: 100%; border-collapse: collapse; min-width: 520px; font-size: 0.92rem; }
+table.leaderboard thead th { background: var(--color-surface-alt); text-align: left; padding: 12px 14px; font-weight: 700; cursor: pointer; user-select: none; white-space: nowrap; position: sticky; top: 0; }
 table.leaderboard thead th i { margin-left: 4px; opacity: 0.5; font-size: 0.75em; }
-table.leaderboard tbody td {
-  padding: 11px 14px;
-  border-top: 1px solid var(--color-border);
-  vertical-align: middle;
-}
+table.leaderboard tbody td { padding: 11px 14px; border-top: 1px solid var(--color-border); vertical-align: middle; }
 table.leaderboard tbody tr:hover { background: var(--color-surface-alt); }
 .rank-cell { font-weight: 800; }
 .rank-1 { color: #f2b400; }
 .rank-2 { color: #9aa2bd; }
 .rank-3 { color: #c17a3f; }
-
 .qstat-list { display: flex; flex-direction: column; gap: 12px; }
 .qstat-row { padding: 14px 16px; }
 .qstat-row .qtext { font-weight: 600; margin-bottom: 8px; line-height: 1.4; }
-.qstat-bar {
-  height: 10px;
-  border-radius: 999px;
-  background: var(--color-danger-soft);
-  overflow: hidden;
-  display: flex;
-}
+.qstat-bar { height: 10px; border-radius: 999px; background: var(--color-danger-soft); overflow: hidden; display: flex; }
 .qstat-bar .fill-correct { background: var(--color-success); height: 100%; }
 .qstat-legend { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--color-text-muted); margin-top: 6px; }
 """
@@ -1687,15 +1384,7 @@ def _ordinal_rank_badge(rank: int) -> str:
     return f'<i class="fa-solid {icons.get(rank, "fa-star")}"></i>'
 
 
-def _compute_question_stats(
-    quiz: dict, results: list[dict]
-) -> list[dict[str, Any]]:
-    """Return per-question correctness stats. Prefers an explicit
-    ``question_stats`` list on the quiz dict (each item optionally carrying
-    ``correct_count``/``wrong_count``); otherwise derives a reasonable
-    placeholder distribution from the overall pass rate so the report still
-    renders something meaningful when per-user answer logs aren't wired up
-    yet."""
+def _compute_question_stats(quiz: dict, results: list[dict]) -> list[dict[str, Any]]:
     questions = quiz.get("questions") or []
     explicit = quiz.get("question_stats")
     n_results = max(len(results), 1)
@@ -1708,66 +1397,28 @@ def _compute_question_stats(
             correct = int(src.get("correct_count", 0) or 0)
             wrong = int(src.get("wrong_count", 0) or 0)
         else:
-            # Placeholder: approximate using the average pass rate across
-            # all participants when no per-question log is supplied.
-            avg_pct = (
-                sum(
-                    (r.get("score", 0) / r.get("total_questions", 1))
-                    for r in results
-                    if r.get("total_questions")
-                )
-                / n_results
-                if results
-                else 0.5
-            )
+            avg_pct = (sum((r.get("score", 0) / r.get("total_questions", 1)) for r in results if r.get("total_questions")) / n_results if results else 0.5)
             avg_pct = min(max(avg_pct, 0), 1)
             correct = round(avg_pct * n_results)
             wrong = n_results - correct
         total = max(correct + wrong, 1)
-        stats.append(
-            {
-                "text": q_text,
-                "correct": correct,
-                "wrong": wrong,
-                "correct_pct": round((correct / total) * 100),
-            }
-        )
+        stats.append({"text": q_text, "correct": correct, "wrong": wrong, "correct_pct": round((correct / total) * 100)})
     return stats
 
 
 async def render_analysis_html(quiz: dict, results: list[dict]) -> tuple[bytes, str]:
-    """Build a self-contained leaderboard/analysis report HTML page.
-
-    See module docstring for the expected shape of ``quiz`` and ``results``.
-    """
     quiz_name = quiz.get("quiz_name") or "Untitled Quiz"
     qid = quiz.get("qid") or str(uuid.uuid4())[:8]
     questions = quiz.get("questions") or []
     n_questions = len(questions) or 1
     pass_percent = float(quiz.get("pass_percent", 40) or 40)
 
-    # Sort participants by score desc, then by time_taken asc (faster wins ties).
-    ranked = sorted(
-        results,
-        key=lambda r: (-float(r.get("score", 0)), float(r.get("time_taken", 0))),
-    )
-
+    ranked = sorted(results, key=lambda r: (-float(r.get("score", 0)), float(r.get("time_taken", 0))))
     n_participants = len(ranked)
-    avg_score = (
-        sum(float(r.get("score", 0)) for r in ranked) / n_participants
-        if n_participants
-        else 0.0
-    )
-    pass_count = sum(
-        1
-        for r in ranked
-        if r.get("total_questions")
-        and (float(r.get("score", 0)) / float(r["total_questions"])) * 100
-        >= pass_percent
-    )
+    avg_score = (sum(float(r.get("score", 0)) for r in ranked) / n_participants if n_participants else 0.0)
+    pass_count = sum(1 for r in ranked if r.get("total_questions") and (float(r.get("score", 0)) / float(r["total_questions"])) * 100 >= pass_percent)
     fail_count = n_participants - pass_count
 
-    # ---- Podium (top 3) ----
     podium_slots = ["", "", ""]
     for i in range(min(3, n_participants)):
         r = ranked[i]
@@ -1783,13 +1434,8 @@ async def render_analysis_html(quiz: dict, results: list[dict]) -> tuple[bytes, 
       <div class="podium-meta">{total_q} questions</div>
     </div>
 """
-    podium_html = (
-        f'<div class="podium">{"".join(podium_slots)}</div>'
-        if n_participants
-        else '<p style="color:var(--color-text-muted);">No participants yet.</p>'
-    )
+    podium_html = f'<div class="podium">{"".join(podium_slots)}</div>' if n_participants else '<p style="color:var(--color-text-muted);">No participants yet.</p>'
 
-    # ---- Leaderboard table ----
     rows_html = []
     for i, r in enumerate(ranked):
         rank = i + 1
@@ -1800,57 +1446,35 @@ async def render_analysis_html(quiz: dict, results: list[dict]) -> tuple[bytes, 
         pct = (score / total_q * 100) if total_q else 0.0
         passed = pct >= pass_percent
         rank_cls = f"rank-{rank}" if rank <= 3 else ""
-        status_badge = (
-            '<span class="badge badge-success">Passed</span>'
-            if passed
-            else '<span class="badge badge-danger">Not cleared</span>'
-        )
+        status_badge = '<span class="badge badge-success">Passed</span>' if passed else '<span class="badge badge-danger">Not cleared</span>'
         mins, secs = divmod(time_taken, 60)
-        rows_html.append(
-            f"""<tr data-rank="{rank}" data-name="{name}" data-score="{score}"
-                 data-percent="{pct:.2f}" data-time="{time_taken}">
+        rows_html.append(f"""<tr data-rank="{rank}" data-name="{name}" data-score="{score}" data-percent="{pct:.2f}" data-time="{time_taken}">
         <td class="rank-cell {rank_cls}">#{rank}</td>
         <td>{name}</td>
         <td>{score:g} / {total_q}</td>
         <td>{pct:.1f}%</td>
         <td>{mins}m {secs}s</td>
         <td>{status_badge}</td>
-      </tr>"""
-        )
-    table_body = "\n".join(rows_html) or (
-        '<tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);'
-        'padding:20px;">No results submitted yet.</td></tr>'
-    )
+      </tr>""")
+    table_body = "\n".join(rows_html) or '<tr><td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:20px;">No results submitted yet.</td></tr>'
 
-    # ---- Question-level correctness breakdown ----
     q_stats = _compute_question_stats(quiz, ranked)
     qstat_rows = []
     for i, stat in enumerate(q_stats):
-        qstat_rows.append(
-            f"""
+        qstat_rows.append(f"""
       <div class="card qstat-row">
         <div class="qtext">Q{i + 1}. {_esc(stat['text'])}</div>
-        <div class="qstat-bar">
-          <div class="fill-correct" style="width:{stat['correct_pct']}%"></div>
-        </div>
+        <div class="qstat-bar"><div class="fill-correct" style="width:{stat['correct_pct']}%"></div></div>
         <div class="qstat-legend">
           <span>{stat['correct']} correct</span>
           <span>{stat['correct_pct']}% accuracy</span>
           <span>{stat['wrong']} wrong</span>
         </div>
-      </div>"""
-        )
-    qstat_html = "".join(qstat_rows) or (
-        '<p style="color:var(--color-text-muted);">No question data available.</p>'
-    )
+      </div>""")
+    qstat_html = "".join(qstat_rows) or '<p style="color:var(--color-text-muted);">No question data available.</p>'
 
-    # ---- Chart data payload ----
     top_n = ranked[:15]
-    chart_payload = {
-        "scoreLabels": [r.get("user_name", "Anonymous") for r in top_n],
-        "scoreValues": [float(r.get("score", 0)) for r in top_n],
-        "passFail": {"pass": pass_count, "fail": fail_count},
-    }
+    chart_payload = {"scoreLabels": [r.get("user_name", "Anonymous") for r in top_n], "scoreValues": [float(r.get("score", 0)) for r in top_n], "passFail": {"pass": pass_count, "fail": fail_count}}
     chart_json = _js_literal(chart_payload)
 
     hero_html = f"""
@@ -1859,22 +1483,10 @@ async def render_analysis_html(quiz: dict, results: list[dict]) -> tuple[bytes, 
     <h1><i class="fa-solid fa-chart-line"></i> {_esc(quiz_name)} &mdash; Results Analysis</h1>
     <p>Quiz ID: {_esc(qid)} &middot; {n_participants} participant(s) &middot; average score {avg_score:.1f}</p>
     <div class="stat-grid" style="margin-top:22px;">
-      <div class="stat-tile">
-        <div class="value" style="color:var(--color-primary);">{n_participants}</div>
-        <div class="label">Participants</div>
-      </div>
-      <div class="stat-tile">
-        <div class="value" style="color:var(--color-success);">{pass_count}</div>
-        <div class="label">Passed</div>
-      </div>
-      <div class="stat-tile">
-        <div class="value" style="color:var(--color-danger);">{fail_count}</div>
-        <div class="label">Not cleared</div>
-      </div>
-      <div class="stat-tile">
-        <div class="value">{avg_score:.1f}</div>
-        <div class="label">Average score</div>
-      </div>
+      <div class="stat-tile"><div class="value" style="color:var(--color-primary);">{n_participants}</div><div class="label">Participants</div></div>
+      <div class="stat-tile"><div class="value" style="color:var(--color-success);">{pass_count}</div><div class="label">Passed</div></div>
+      <div class="stat-tile"><div class="value" style="color:var(--color-danger);">{fail_count}</div><div class="label">Not cleared</div></div>
+      <div class="stat-tile"><div class="value">{avg_score:.1f}</div><div class="label">Average score</div></div>
     </div>
   </div>
 </div>
@@ -1891,12 +1503,8 @@ async def render_analysis_html(quiz: dict, results: list[dict]) -> tuple[bytes, 
 <div class="container section">
   <div class="section-title"><i class="fa-solid fa-chart-column"></i> Score overview</div>
   <div class="charts-grid">
-    <div class="card chart-card">
-      <canvas id="scoreChart" height="240"></canvas>
-    </div>
-    <div class="card chart-card">
-      <canvas id="passFailChart" height="240"></canvas>
-    </div>
+    <div class="card chart-card"><canvas id="scoreChart" height="240"></canvas></div>
+    <div class="card chart-card"><canvas id="passFailChart" height="240"></canvas></div>
   </div>
 </div>
 """
@@ -1916,9 +1524,7 @@ async def render_analysis_html(quiz: dict, results: list[dict]) -> tuple[bytes, 
           <th>Status</th>
         </tr>
       </thead>
-      <tbody id="leaderboardBody">
-        {table_body}
-      </tbody>
+      <tbody id="leaderboardBody">{table_body}</tbody>
     </table>
   </div>
 </div>
@@ -1927,9 +1533,7 @@ async def render_analysis_html(quiz: dict, results: list[dict]) -> tuple[bytes, 
     qstats_section = f"""
 <div class="container section">
   <div class="section-title"><i class="fa-solid fa-magnifying-glass-chart"></i> Question-wise breakdown</div>
-  <div class="qstat-list">
-    {qstat_html}
-  </div>
+  <div class="qstat-list">{qstat_html}</div>
 </div>
 """
 
@@ -1944,12 +1548,474 @@ async def render_analysis_html(quiz: dict, results: list[dict]) -> tuple[bytes, 
     )
 
     analysis_js = _ANALYSIS_JS_TEMPLATE.replace("%%DATA%%", chart_json)
-    html_doc = _page_shell(
-        title=f"{quiz_name} - Analysis",
-        extra_head=_ANALYSIS_CSS,
-        body=body,
-        extra_scripts=_CHARTJS_SCRIPT + f"<script>{analysis_js}</script>",
-    )
-
+    html_doc = _page_shell(title=f"{quiz_name} - Analysis", extra_head=_ANALYSIS_CSS, body=body, extra_scripts=_CHARTJS_SCRIPT + f"<script>{analysis_js}</script>")
     filename = f"{_slug(quiz_name)}-{qid}-analysis.html"
     return html_doc.encode("utf-8"), filename
+
+
+# ══════════════════════════════════════════════════════════════════════
+# NOTES HTML RENDERER — any plain text → clean readable notes page
+# ══════════════════════════════════════════════════════════════════════
+
+_NOTES_SEP_RE = re.compile(r"^\s*[=\-*_~]{4,}\s*$")
+_NOTES_BULLET_RE = re.compile(r"^(\s*)[-•·●○▪◆➤►→]\s+(.*)$")
+_NOTES_ORDERED_RE = re.compile(r"^(\s*)((?:[A-Za-z]{1,3}|\d{1,3})[.)])\s+(.*)$")
+_NOTES_FENCE_RE = re.compile(r"^\s*```")
+_NOTES_COLON_HEAD_RE = re.compile(r"^(.{3,90}?)\s*[:：]\s*$")
+
+
+def _notes_inline(text: str) -> str:
+    s = html.escape(text)
+    s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
+    s = re.sub(r"__(.+?)__", r"<strong>\1</strong>", s)
+    s = re.sub(r"(?<!\*)\*([^*\n]+?)\*(?!\*)", r"<em>\1</em>", s)
+    s = re.sub(r"(?<![_\w])_([^_\n]+?)_(?![_\w])", r"<em>\1</em>", s)
+    s = re.sub(r"`([^`\n]+?)`", r"<code>\1</code>", s)
+    return s
+
+
+def _parse_notes_for_html(text: str, default_title: str = "Notes") -> dict:
+    if not text:
+        return {"title": default_title, "blocks": [], "toc": []}
+
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    blocks: list[dict] = []
+    toc: list[tuple[int, str, str]] = []
+    counters = {"h1": 0, "h2": 0, "h3": 0}
+    cur_ul: list | None = None
+    cur_ol: list | None = None
+
+    def flush_lists():
+        nonlocal cur_ul, cur_ol
+        if cur_ul:
+            blocks.append({"type": "ul", "items": cur_ul})
+            cur_ul = None
+        if cur_ol:
+            blocks.append({"type": "ol", "items": cur_ol})
+            cur_ol = None
+
+    def add_heading(level: int, title: str):
+        flush_lists()
+        counters[f"h{level}"] += 1
+        anchor = f"h{level}-{counters[f'h{level}']}"
+        blocks.append({"type": f"h{level}", "text": _notes_inline(title), "anchor": anchor})
+        if level <= 2:
+            toc.append((level, anchor, title))
+
+    def is_headingish(s: str, nxt: str) -> bool:
+        if not s or len(s) > 130:
+            return False
+        if s[0] in "-•·*◆➤►>":
+            return False
+        if s.endswith((".", "।", ",", ";")):
+            return False
+        if not any(c.isalpha() for c in s):
+            return False
+        n = (nxt or "").strip()
+        return (not n) or bool(_NOTES_BULLET_RE.match(nxt or "")) or bool(_NOTES_ORDERED_RE.match(nxt or ""))
+
+    i = 0
+    in_code = False
+    code_buf: list[str] = []
+
+    while i < len(lines):
+        raw = lines[i]
+        line = raw.rstrip()
+
+        if _NOTES_FENCE_RE.match(line):
+            if in_code:
+                blocks.append({"type": "code", "text": "\n".join(code_buf)})
+                code_buf, in_code = [], False
+            else:
+                flush_lists()
+                in_code = True
+            i += 1
+            continue
+        if in_code:
+            code_buf.append(raw)
+            i += 1
+            continue
+
+        if _NOTES_SEP_RE.match(line):
+            if i + 2 < len(lines):
+                nxt = lines[i + 1].strip()
+                if nxt and _NOTES_SEP_RE.match(lines[i + 2]):
+                    add_heading(1, nxt)
+                    i += 3
+                    continue
+            flush_lists()
+            blocks.append({"type": "hr"})
+            i += 1
+            continue
+
+        if not line.strip():
+            flush_lists()
+            i += 1
+            continue
+
+        m = _NOTES_BULLET_RE.match(line)
+        if m:
+            indent = len(m.group(1).replace("\t", "    "))
+            lvl = 0 if indent < 2 else (1 if indent < 4 else 2)
+            content = _notes_inline(m.group(2))
+            if cur_ul is None or cur_ol is not None:
+                flush_lists()
+                cur_ul = []
+            cur_ul.append({"level": lvl, "html": content})
+            i += 1
+            continue
+
+        m = _NOTES_ORDERED_RE.match(line)
+        if m:
+            indent = len(m.group(1).replace("\t", "    "))
+            lvl = 0 if indent < 2 else (1 if indent < 4 else 2)
+            marker = m.group(2)
+            content = _notes_inline(m.group(3))
+            if cur_ol is None or cur_ul is not None:
+                flush_lists()
+                cur_ol = []
+            cur_ol.append({"level": lvl, "marker": marker, "html": content})
+            i += 1
+            continue
+
+        if line.lstrip().startswith(">"):
+            flush_lists()
+            blocks.append({"type": "quote", "text": _notes_inline(line.lstrip()[1:].strip())})
+            i += 1
+            continue
+
+        cm = _NOTES_COLON_HEAD_RE.match(line.strip())
+        if cm and not line.strip().startswith(("-", "•")):
+            add_heading(3, cm.group(1).strip())
+            i += 1
+            continue
+
+        if is_headingish(line.strip(), lines[i + 1] if i + 1 < len(lines) else ""):
+            add_heading(2, line.strip())
+            i += 1
+            continue
+
+        flush_lists()
+        para = [line.strip()]
+        j = i + 1
+        while j < len(lines):
+            nl = lines[j].rstrip()
+            if not nl.strip():
+                break
+            if (
+                _NOTES_SEP_RE.match(nl)
+                or _NOTES_BULLET_RE.match(nl)
+                or _NOTES_ORDERED_RE.match(nl)
+                or _NOTES_FENCE_RE.match(nl)
+            ):
+                break
+            if is_headingish(nl.strip(), lines[j + 1] if j + 1 < len(lines) else ""):
+                break
+            if _NOTES_COLON_HEAD_RE.match(nl.strip()) and len(nl.strip()) < 80:
+                break
+            para.append(nl.strip())
+            j += 1
+        blocks.append({"type": "p", "text": _notes_inline(" ".join(para))})
+        i = j
+
+    flush_lists()
+    if in_code and code_buf:
+        blocks.append({"type": "code", "text": "\n".join(code_buf)})
+
+    h1 = next((b["text"] for b in blocks if b["type"] == "h1"), None)
+    title = h1 or default_title
+    title = re.sub(r"<[^>]+>", "", title)
+    return {"title": title, "blocks": blocks, "toc": toc}
+
+
+_NOTES_HTML_CSS = """
+:root {
+  --bg: #f8fafc; --surface: #fff; --surface-2: #f1f5f9;
+  --text: #1e293b; --text-muted: #64748b;
+  --primary: #4f46e5; --primary-dark: #4338ca;
+  --border: #e2e8f0;
+  --h1-bg: linear-gradient(90deg, #1e3a8a, #2563eb);
+  --h2-bg: #eff6ff; --h2-border: #2563eb;
+  --bullet: #2563eb; --bullet-1: #60a5fa; --bullet-2: #94a3b8;
+  --quote-bg: #fef3c7; --quote-border: #f59e0b;
+  --code-bg: #f1f5f9;
+  --shadow: 0 1px 3px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.06);
+}
+html[data-theme="dark"] {
+  --bg: #0b1220; --surface: #111827; --surface-2: #1e293b;
+  --text: #e5e7eb; --text-muted: #94a3b8;
+  --primary: #818cf8; --primary-dark: #6366f1;
+  --border: #1f2937;
+  --h1-bg: linear-gradient(90deg, #312e81, #4338ca);
+  --h2-bg: #1e1b4b; --h2-border: #6366f1;
+  --bullet: #818cf8; --bullet-1: #a5b4fc; --bullet-2: #64748b;
+  --quote-bg: #422006; --quote-border: #f59e0b;
+  --code-bg: #1e293b;
+  --shadow: 0 1px 3px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; background: var(--bg); color: var(--text);
+  font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Devanagari', sans-serif;
+  line-height: 1.65; transition: background .25s, color .25s;
+}
+code, pre { font-family: 'SFMono-Regular', Menlo, 'Courier New', monospace; }
+
+.layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+.toc {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: 20px 16px; box-shadow: var(--shadow);
+}
+@media (max-width: 900px) {
+  .toc { position: static; height: auto; max-height: 45vh;
+         border-right: none; border-bottom: 1px solid var(--border); }
+}
+.toc-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.toc-title {
+  font-weight: 800; font-size: 0.85rem; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-muted);
+}
+.toc-search-wrap { margin-bottom: 12px; }
+.toc-search-wrap input {
+  width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface-2); color: var(--text);
+  font-size: 0.85rem; font-family: inherit;
+}
+.toc-item {
+  display: block; padding: 6px 10px; border-radius: 6px;
+  color: var(--text); text-decoration: none; font-size: 0.85rem;
+  line-height: 1.4; margin-bottom: 2px; transition: background .12s;
+}
+.toc-item:hover { background: var(--surface-2); }
+.toc-item.toc-l1 { font-weight: 700; }
+.toc-item.toc-l2 { padding-left: 22px; font-size: 0.82rem; color: var(--text-muted); }
+.toc-item.active { background: var(--primary); color: #fff; }
+
+.theme-toggle {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.theme-toggle:hover { background: var(--border); }
+
+.doc { max-width: 820px; margin: 0 auto; padding: 40px 32px 80px; }
+@media (max-width: 640px) { .doc { padding: 24px 18px 60px; } }
+
+.notes-cover {
+  text-align: center; padding: 40px 20px 50px;
+  border-bottom: 3px solid var(--primary); margin-bottom: 32px;
+}
+.cover-icon { font-size: 52px; margin-bottom: 16px; }
+.cover-title {
+  font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight: 800;
+  color: var(--text); margin: 0 0 10px 0; letter-spacing: -0.02em;
+}
+.cover-meta {
+  color: var(--text-muted); font-size: 0.82rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.notes-h1 {
+  background: var(--h1-bg); color: #fff;
+  padding: 14px 20px; margin: 40px 0 18px 0;
+  font-size: 1.25rem; font-weight: 800; border-radius: 10px;
+  scroll-margin-top: 20px;
+}
+.notes-h1:first-of-type { margin-top: 0; }
+.notes-h2 {
+  color: var(--primary); font-size: 1.06rem; font-weight: 700;
+  margin: 24px 0 10px 0; padding: 8px 14px;
+  border-left: 4px solid var(--h2-border); background: var(--h2-bg);
+  border-radius: 0 8px 8px 0; scroll-margin-top: 20px;
+}
+.notes-h3 {
+  color: var(--text); font-size: 1rem; font-weight: 700;
+  margin: 18px 0 8px 0; scroll-margin-top: 20px;
+}
+.notes-p {
+  margin: 0 0 12px 0; text-align: justify; color: var(--text);
+  font-size: 0.96rem;
+}
+.notes-ul, .notes-ol { margin: 6px 0 14px 0; padding-left: 6px; list-style: none; }
+.notes-ul li, .notes-ol li {
+  margin-bottom: 6px; font-size: 0.94rem; line-height: 1.6;
+}
+.notes-ul li.indent-1 { padding-left: 24px; }
+.notes-ul li.indent-2 { padding-left: 48px; }
+.notes-ol li.indent-1 { padding-left: 24px; }
+.notes-ol li.indent-2 { padding-left: 48px; }
+.notes-ul .bm { font-weight: 700; margin-right: 8px; color: var(--bullet); }
+.notes-ul li.indent-1 .bm { color: var(--bullet-1); }
+.notes-ul li.indent-2 .bm { color: var(--bullet-2); }
+.notes-ol .om { font-weight: 700; margin-right: 8px; color: var(--bullet); }
+.notes-quote {
+  margin: 14px 0; padding: 10px 16px;
+  border-left: 4px solid var(--quote-border);
+  background: var(--quote-bg); font-style: italic;
+  border-radius: 0 8px 8px 0;
+}
+.notes-pre {
+  margin: 14px 0; padding: 14px 16px;
+  background: var(--code-bg); border-radius: 8px;
+  overflow-x: auto; font-size: 0.85rem;
+  border-left: 3px solid var(--primary);
+}
+.notes-hr { border: none; border-top: 1px dashed var(--border); margin: 20px 0; }
+code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.88em; }
+.back-to-top {
+  position: fixed; bottom: 20px; right: 20px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--primary); color: #fff; border: none;
+  cursor: pointer; font-size: 18px; box-shadow: 0 6px 16px rgba(0,0,0,.2);
+  display: none; align-items: center; justify-content: center;
+}
+.back-to-top.show { display: flex; }
+"""
+
+_NOTES_HTML_JS = """
+(function(){
+  var root = document.documentElement;
+  try { var t = localStorage.getItem('notes-theme'); if (t) root.setAttribute('data-theme', t); } catch(e) {}
+  function icon(){
+    var b = document.getElementById('themeBtn'); if(!b) return;
+    var d = root.getAttribute('data-theme') === 'dark';
+    b.innerHTML = d ? '☀️' : '🌙';
+  }
+  window.addEventListener('DOMContentLoaded', function(){
+    icon();
+    var tb = document.getElementById('themeBtn');
+    if(tb) tb.addEventListener('click', function(){
+      var d = root.getAttribute('data-theme') === 'dark';
+      if(d){ root.removeAttribute('data-theme'); try{localStorage.setItem('notes-theme','light')}catch(e){} }
+      else { root.setAttribute('data-theme','dark'); try{localStorage.setItem('notes-theme','dark')}catch(e){} }
+      icon();
+    });
+    var s = document.getElementById('tocSearch');
+    if(s) s.addEventListener('input', function(){
+      var q = this.value.toLowerCase();
+      document.querySelectorAll('.toc-item').forEach(function(a){
+        a.style.display = a.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none';
+      });
+    });
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc-item'));
+    var heads = links.map(function(a){
+      var id = a.getAttribute('data-id'); return id ? document.getElementById(id) : null;
+    }).filter(Boolean);
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(!e.isIntersecting) return;
+        links.forEach(function(l){ l.classList.remove('active'); });
+        var match = links.find(function(l){ return l.getAttribute('data-id') === e.target.id; });
+        if(match) match.classList.add('active');
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    heads.forEach(function(h){ obs.observe(h); });
+    var btt = document.getElementById('backToTop');
+    if(btt){
+      window.addEventListener('scroll', function(){
+        btt.classList.toggle('show', window.scrollY > 400);
+      });
+      btt.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+    }
+  });
+})();
+"""
+
+
+def render_notes_html(text: str, title: str) -> tuple[bytes, str]:
+    """Any plain text → single-file offline-ready notes HTML."""
+    parsed = _parse_notes_for_html(text, default_title=title)
+
+    body_parts: list[str] = []
+    n_h2 = sum(1 for b in parsed["blocks"] if b["type"] == "h2")
+    body_parts.append(
+        '<section class="notes-cover">'
+        '<div class="cover-icon">📓</div>'
+        f'<h1 class="cover-title">{html.escape(title)}</h1>'
+        f'<div class="cover-meta">{n_h2} section{"s" if n_h2 != 1 else ""}</div>'
+        '</section>'
+    )
+    for b in parsed["blocks"]:
+        t = b["type"]
+        if t in ("h1", "h2", "h3"):
+            lvl = t[1]
+            body_parts.append(
+                f'<h{lvl} id="{b.get("anchor","")}" class="notes-{t}">{b["text"]}</h{lvl}>'
+            )
+        elif t == "p":
+            body_parts.append(f'<p class="notes-p">{b["text"]}</p>')
+        elif t == "ul":
+            items = "".join(
+                f'<li class="indent-{it["level"]}"><span class="bm">•</span>{it["html"]}</li>'
+                for it in b["items"]
+            )
+            body_parts.append(f'<ul class="notes-ul">{items}</ul>')
+        elif t == "ol":
+            items = "".join(
+                f'<li class="indent-{it["level"]}"><span class="om">{html.escape(it["marker"])}</span>{it["html"]}</li>'
+                for it in b["items"]
+            )
+            body_parts.append(f'<ol class="notes-ol">{items}</ol>')
+        elif t == "quote":
+            body_parts.append(f'<blockquote class="notes-quote">{b["text"]}</blockquote>')
+        elif t == "code":
+            body_parts.append(f'<pre class="notes-pre"><code>{html.escape(b["text"])}</code></pre>')
+        elif t == "hr":
+            body_parts.append('<hr class="notes-hr">')
+
+    body = "\n".join(body_parts)
+
+    toc_items = []
+    for level, anchor, tl in parsed["toc"]:
+        if level > 2:
+            continue
+        cls = "toc-l1" if level == 1 else "toc-l2"
+        toc_items.append(
+            f'<a href="#{anchor}" class="toc-item {cls}" data-id="{anchor}">'
+            f'{html.escape(tl)}</a>'
+        )
+    toc = ""
+    if toc_items:
+        toc = (
+            '<nav class="toc" id="toc">'
+            '<div class="toc-header">'
+            '<div class="toc-title">📑 Contents</div>'
+            '<button id="themeBtn" class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>'
+            '</div>'
+            '<div class="toc-search-wrap">'
+            '<input id="tocSearch" type="search" placeholder="Search sections...">'
+            '</div>'
+            + "".join(toc_items)
+            + '</nav>'
+        )
+
+    safe_name = re.sub(r"[^A-Za-z0-9_-]+", "_", title or "Notes").strip("_") or "Notes"
+    filename = f"{safe_name}_notes.html"
+
+    doc = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{html.escape(title)} — Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>{_NOTES_HTML_CSS}</style>
+</head>
+<body>
+<div class="layout">
+{toc}
+<main class="doc">
+{body}
+</main>
+</div>
+<button id="backToTop" class="back-to-top" type="button" aria-label="Back to top">↑</button>
+<script>{_NOTES_HTML_JS}</script>
+</body>
+</html>"""
+
+    return doc.encode("utf-8"), filename
